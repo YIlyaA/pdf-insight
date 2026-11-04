@@ -1,0 +1,16 @@
+{
+  "kit_version": 2,
+  "hub_commit": null,
+  "files": {
+    ".github/workflows/checks.yml": "df64e09b9a0d888625bb26992baf822cac77592dc4806ecd54514674ac1f0519",
+    "scripts/test_guard.py": "564bce9ae1fc73b82f4fb5ef99f2d4c489d0a98162c9c603a812f578cd01a8e9",
+    "scripts/ci_changes.py": "35a5c94132d046f3a754b6939195cd87c42c37c6d67f2ae01a4d86bb81aba124",
+    "tasks/_template.md": "39a1229f554a55796b0e41fb0c47cf191de08c0d439e0c519f8492d8e444a812"
+  },
+  "skip": [
+    "*.md",
+    "docs/**",
+    "tasks/**",
+    "design/**"
+  ]
+}

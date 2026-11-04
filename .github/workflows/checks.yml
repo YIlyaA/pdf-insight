@@ -1,0 +1,108 @@
+# claude-hub kit v2
+# Written by project_kit.py from claude-hub templates/ci-security.yml: gitleaks, osv-scanner, Semgrep and
+# test_guard.py. `project_kit.py doctor` compares this file with the kit; `project_kit.py update` refreshes it.
+# Project test jobs go in this file too, each with `needs: secrets` and the `if:` used by the jobs below;
+# after that edit doctor notes the file as changed and update leaves it alone (`update --force` replaces it).
+# Require the job names in the main branch ruleset (`init` prints the `gh api` command).
+#
+# Minutes economy (claude-hub docs/ci.md): docs-only changes run `secrets` only; jobs skipped by `if:`
+# report success, so required checks still pass. The ci_changes.py globs come from `init --skip`;
+# never list a file that a test reads.
+name: checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "17 3 * * 1"  # Mondays 03:17 UTC: everything, including new CVEs in old locks
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  # Required check. Also decides what else runs: if this job fails, nothing can merge.
+  secrets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      pull-requests: read  # gitleaks-action lists the PR's commits
+    outputs:
+      code: ${{ steps.changes.outputs.code }}
+      full: ${{ steps.changes.outputs.full }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: what changed
+        id: changes
+        env:
+          EVENT: ${{ github.event_name }}
+          RANGE: ${{ github.event_name == 'pull_request' && format('{0}...{1}', github.event.pull_request.base.sha, github.event.pull_request.head.sha) || format('{0}..{1}', github.event.before, github.sha) }}
+        run: |
+          if [ "$EVENT" = schedule ] || [ "$EVENT" = workflow_dispatch ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            # --no-renames: a moved file lists both paths, so moving code into docs/ still counts as code
+            git diff --no-renames --name-only "$RANGE" > "$RUNNER_TEMP/changed.txt" || : > "$RUNNER_TEMP/changed.txt"
+            python3 scripts/ci_changes.py --skip '*.md' --skip 'docs/**' --skip 'tasks/**' --skip 'design/**' \
+              < "$RUNNER_TEMP/changed.txt" >> "$GITHUB_OUTPUT"
+          fi
+          # full=false on pushes to main: the PR already ran everything, re-check on Linux only.
+          if [ "$EVENT" = push ]; then echo "full=false" >> "$GITHUB_OUTPUT"; else echo "full=true" >> "$GITHUB_OUTPUT"; fi
+          cat "$GITHUB_OUTPUT"
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dependencies:
+    # Known vulnerabilities in requirements*.txt, poetry/uv locks, package-lock.json, pnpm-lock.yaml.
+    needs: secrets
+    if: needs.secrets.outputs.code == 'true' && needs.secrets.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          curl -sSfL -o osv-scanner https://github.com/google/osv-scanner/releases/latest/download/osv-scanner_linux_amd64
+          chmod +x osv-scanner
+          ./osv-scanner scan source --recursive .
+
+  sast:
+    # Rulesets for Python/Django, TypeScript/React and common secrets; no account needed.
+    needs: secrets
+    if: needs.secrets.outputs.code == 'true' && needs.secrets.outputs.full == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: semgrep/semgrep
+    steps:
+      - uses: actions/checkout@v4
+      - run: semgrep scan --error --metrics=off --config p/python --config p/django --config p/typescript --config p/react --config p/secrets
+
+  test-guard:
+    needs: secrets
+    if: github.event_name == 'pull_request' && needs.secrets.outputs.code == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python scripts/test_guard.py --base origin/${{ github.base_ref }}
+
+  # Example test job: Linux on every code change, other OS only when full == 'true'.
+  # tests:
+  #   needs: secrets
+  #   if: needs.secrets.outputs.code == 'true'
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   steps: [...]

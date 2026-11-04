@@ -1,0 +1,4 @@
+.github/workflows/checks.yml text eol=lf
+scripts/test_guard.py text eol=lf
+scripts/ci_changes.py text eol=lf
+tasks/_template.md text eol=lf
