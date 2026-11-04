@@ -12,23 +12,23 @@ UI language: Polish. Code and spec: English.
 ## 2. Flows
 ### F1. Analyse a PDF (happy path)
 1. Open page: header, drop zone, privacy notice, history (if any).
-2. Drop a file or press "Wybierz plik" (Enter/Space on the zone opens the picker).
+2. Drop a file or activate the drop zone (it is the only control; "Wybierz plik" is its visible label, not a second button).
 3. Client validation passes (PDF magic bytes, size ≤ 10 MB).
 4. Progress shows 4 steps: Wczytywanie > Odczyt tekstu > Analiza AI > Gotowe (long docs: "Analiza AI 2/5"; scans: "Rozpoznawanie stron skanowanych").
 5. Result: summary, key points, document facts, entities, amounts, dates, keywords; tabs "Podgląd" / "JSON"; buttons "Pobierz JSON", "Kopiuj JSON", "Analizuj kolejny plik".
 - Fails when:
   - wrong type / empty / >10 MB / unreadable / password-protected: inline error under the zone, no request sent, zone stays usable.
-  - API error, timeout, rate limit, invalid AI output after 1 retry: error panel with cause and "Spróbuj ponownie" (reruns with the same file) and "Wybierz inny plik".
-  - offline: error panel "Brak połączenia", retry available.
+  - request failure: error panel with title, cause and next step. Which codes allow a retry, and the copy, are in section 11. Retry reruns only the chunks that did not finish.
+  - offline (`navigator.onLine` is false): error panel "Brak połączenia", retry available. A fetch error while online is "Nie udało się połączyć z serwerem", never "offline".
   - new file dropped during analysis: current request is aborted, new run starts.
   - refresh during analysis: back to idle (result is in history only if finished).
-  - no text and no scan content found: empty state "Nie znaleziono treści".
-- Keyboard: Tab > drop zone (Enter opens picker) > history items > theme. After analysis, focus moves to the result heading; on error, to the error heading.
+  - no readable content: empty state "Nie znaleziono tekstu w tym pliku." (one string, section 9). It shows when every page is below the text threshold and a rendered page is blank (almost uniform pixels, checked on the client before upload), or when the model answers with an empty summary on the scan path.
+- Keyboard: Tab > drop zone (one tab stop; Enter/Space opens the picker) > history items. After analysis, focus moves to the result heading; on error, to the error heading.
 
 ### F2. Open from history
 1. History list shows up to 10 recent analyses (file name, date, type).
 2. Select one: result view opens from localStorage, no request.
-3. "Usuń" removes one entry; "Wyczyść historię" removes all (confirm inline, undo not needed: data is local and cheap).
+3. History is stored in this browser only, for 30 days, max 10 entries; the privacy note says so. Every entry is re-validated with `InsightSchema` when read; invalid or expired entries are dropped. "Usuń" removes one entry; "Wyczyść historię" removes all (confirm inline, undo not needed: data is local and cheap).
 - Fails when: localStorage disabled or entry corrupted: history hidden / entry skipped silently, app unaffected.
 
 ## 3. Information architecture
@@ -36,10 +36,9 @@ UI language: Polish. Code and spec: English.
 /pdf-insight/   (single screen, no router: avoids Pages 404 problem)
   header: name, short tagline
   main
-    UploadPanel (idle) | ProgressPanel (running) | ErrorPanel | ResultPanel
-    PrivacyNote
+    UploadPanel (idle, contains PrivacyNote above the drop area) | ProgressPanel (running) | ErrorPanel | ResultPanel
     HistoryList
-  footer: link to repo, "Dane przetwarzane przez API AI"
+  footer: link to repo, "Dane przetwarzane przez Google Gemini"
 ```
 | Screen | URL | Main job | Primary action | Content in priority order |
 |---|---|---|---|---|
@@ -48,9 +47,9 @@ UI language: Polish. Code and spec: English.
 ## 4. Screen × state matrix
 | Component | Loading | Empty | Partial | Success | Error | Offline / slow | Overflow | Disabled |
 |---|---|---|---|---|---|---|---|---|
-| UploadPanel | drag-over highlight | idle: instruction + limits | n/a | n/a | inline validation message | n/a | long file name truncated with title | disabled while analysing (replace by drop = abort + restart, announced) |
-| ProgressPanel | 4 steps, current marked, elapsed seconds | n/a | "Analiza AI 2/5" for chunks | n/a | moves to ErrorPanel | after 15 s: "To trwa dłużej niż zwykle…" | n/a | cancel button always enabled |
-| ErrorPanel | retry shows progress | n/a | n/a | n/a | title, cause, 2 actions | "Brak połączenia" | long message wraps | retry disabled while running |
+| UploadPanel | drag-over highlight | idle: instruction + limits | n/a | n/a | inline validation message | n/a | long file name truncated with title | while analysing the zone stays active: a dropped file aborts the run and starts a new one, announced politely; the picker is also reachable by keyboard |
+| ProgressPanel | 4 steps, current marked, elapsed seconds (outside the live region, `aria-live="off"`) | n/a | "Analiza AI 2/5" for chunks | n/a | moves to ErrorPanel | after 15 s: "To trwa dłużej niż zwykle."; after 45 s without progress: client timeout, error `timeout` | n/a | cancel always enabled: aborts requests, returns to idle, focus goes to the zone heading, announced "Anulowano analizę" |
+| ErrorPanel | retry shows progress | n/a | n/a | n/a | title, cause, next step, 2 actions (retry only when section 11 allows it) | "Brak połączenia" | long message wraps | retry disabled while running and during a rate-limit countdown ("Spróbuj za 42 s") |
 | ResultPanel | skeleton never shown (result appears whole) | "Nie znaleziono treści w pliku" | missing fields shown as "Brak danych" | all sections | n/a | n/a | long lists collapse after 8 items with "Pokaż wszystkie (n)"; JSON scrolls in a bordered box | n/a |
 | HistoryList | n/a | hidden | n/a | list | corrupted entry skipped | n/a | 10 max, oldest dropped | n/a |
 
@@ -60,8 +59,8 @@ Edge cases: 0/1/many amounts; 60 entities; 200-character file name; missing titl
 | Component | Purpose | Variants | States | Content limits | Keyboard / ARIA | Tokens |
 |---|---|---|---|---|---|---|
 | Button | actions | primary (lime), secondary (outline), ghost | default, hover, focus-visible, active, disabled, loading | label ≤ 24 chars | native button | `--accent`, `--border`, `--focus` |
-| DropZone | choose/drop PDF | idle, drag-over, error | + disabled | hint text 2 lines | `role="button"`, tabindex 0, Enter/Space, `aria-describedby` hint+error, hidden `<input type=file accept=application/pdf>` | `--surface`, `--border-strong` |
-| StepList | pipeline progress | 4 steps | pending, active, done, failed | step label ≤ 28 chars | `<ol>`, `aria-current="step"`, live region polite for step name | `--accent`, `--muted` |
+| DropZone | choose/drop PDF | idle, drag-over, error | + disabled | hint text 2 lines | one focusable control (`role="button"`, tabindex 0, Enter/Space), `aria-describedby` hint + privacy note + error, hidden `<input type=file accept=application/pdf>` (not focusable) | `--surface`, `--border-strong` |
+| StepList | pipeline progress | 4 steps | pending, active, done, failed | step label ≤ 24 chars; counter counts requests of the current phase | `<ol>`, `aria-current="step"`, live region polite for step name | `--accent`, `--muted` |
 | ErrorPanel | explain failure | validation (inline), request failure (panel) | default | message ≤ 160 chars | `role="alert"`, heading receives focus | `--error` |
 | ResultSection | titled block | text, list, table | collapsed/expanded | lists collapse > 8 | `<section aria-labelledby>`; toggle is a button with `aria-expanded` | `--surface` |
 | FactsTable | document fields, amounts, dates | n/a | n/a | numbers right-aligned, tabular | `<table>` with `<th scope>` | `--mono` |
@@ -80,7 +79,7 @@ Edge cases: 0/1/many amounts; 60 entities; 200-character file name; missing titl
 | `--border-strong` | #7C8478 | #6A706A | controls, drop zone outline (UI 3:1) |
 | `--text` | #141612 | #ECEFEA | body text |
 | `--muted` | #4B5247 | #A3A9A0 | secondary text |
-| `--accent` | #C6F432 | #C6F432 | primary button fill, active step |
+| `--accent` | #C6F432 | #C6F432 | primary button fill; active step fill (light theme: also `--accent-text` label and a 2 px `--accent-text` outline, because lime on the light bg is 1.19:1) |
 | `--on-accent` | #141612 | #0E0F0E | text on accent |
 | `--accent-text` | #3F5A00 | #C6F432 | accent-coloured text and links |
 | `--error` | #B3261E | #FF8A80 | errors |
@@ -105,7 +104,9 @@ Contrast checked (computed with a script, WCAG formula):
 | light on-accent / accent | 14.21 | 4.5 | yes |
 | light error / bg | 6.08 | 4.5 | yes |
 | light border-strong / bg | 3.60 | 3 | yes |
-| dark border-strong #6A706A / bg | to verify in code test | 3 | pending |
+| dark border-strong #6A706A / bg | 3.79 | 3 | yes |
+| dark border-strong / surface | 3.52 | 3 | yes |
+| light accent fill / bg | 1.19 | 3 | no: never the only signal, see `--accent` |
 
 ## 7. Responsive
 | Width | Layout changes |
@@ -134,15 +135,15 @@ Contrast checked (computed with a script, WCAG formula):
 | drop hint | lub wybierz go z dysku. Tylko PDF, maks. 10 MB. | |
 | button | Wybierz plik | |
 | drag-over | Upuść plik, aby rozpocząć | |
-| privacy | Treść pliku zostanie wysłana do zewnętrznego API AI w celu analizy. Nie wgrywaj dokumentów, których nie możesz udostępniać. | required by brief |
+| privacy | Treść pliku zostanie wysłana do Google Gemini w celu analizy. Dostawca może ją przechowywać zgodnie z własnymi zasadami. Wynik zapisujemy tylko w tej przeglądarce. Nie wgrywaj dokumentów, których nie możesz udostępniać. | required by brief; placed inside the drop zone block, linked with `aria-describedby` |
 | err type | To nie jest plik PDF. Wybierz plik z rozszerzeniem .pdf. | |
 | err size | Plik jest za duży (maks. 10 MB). | show actual size |
 | err empty | Plik jest pusty. | |
 | err corrupt | Nie udało się odczytać pliku. Może być uszkodzony. | |
 | err password | Plik jest chroniony hasłem. Zdejmij zabezpieczenie i spróbuj ponownie. | |
 | steps | Wczytywanie pliku / Odczyt tekstu / Analiza AI / Gotowe | |
-| scan step | Rozpoznawanie stron skanowanych (n z m) | |
-| slow | To trwa dłużej niż zwykle. Analizujemy dłuższy dokument. | after 15 s |
+| scan step | Skany: strona n z m | counts pages of the scan batch |
+| slow | To trwa dłużej niż zwykle. Nadal pracujemy. | after 15 s; does not guess the cause |
 | cancel | Anuluj | |
 | err api | Analiza nie powiodła się. Spróbuj ponownie za chwilę. | |
 | err limit | Przekroczono limit zapytań. Spróbuj ponownie za minutę. | 429 |
@@ -154,8 +155,8 @@ Contrast checked (computed with a script, WCAG formula):
 | empty result | Nie znaleziono tekstu w tym pliku. | |
 | no data | Brak danych | for null / [] |
 | result tabs | Podgląd / JSON | |
-| download | Pobierz JSON | filename `<name>.insight.json` |
-| copy | Kopiuj JSON / Skopiowano | |
+| download | Pobierz JSON | filename: name without `.pdf`, characters outside letters, digits, `-`, `_` replaced by `_`, then `.insight.json` |
+| copy | Kopiuj JSON / Skopiowano / Nie udało się skopiować | success and failure announced politely |
 | next | Analizuj kolejny plik | |
 | history title | Ostatnie analizy | |
 | delete | Usuń | `aria-label`: "Usuń analizę pliku <name>" |
@@ -168,3 +169,29 @@ Dates, amounts via `Intl` with `pl-PL`. Glossary: "analiza" = whole run; "wynik"
 
 ## 10. Images
 None. Logo is text; icons are inline SVG (own, no licence issue). No `design/image-ideas.md` entries.
+
+## 11. Verdict amendments (design trial, 2026-11-04)
+
+Prosecutor: 15 charges. Defender conceded 6 in full and 9 in part. Judgement: all upheld except the parts below.
+- Rejected: "Retry-After cannot be hard-coded" (it is always 60 s, but the Worker now exposes it, PR #5; the client reads the header and falls back to 60). "Timer is read aloud" (step name only is live; made explicit above). "Model text may be HTML" (React escapes; kept as a rule: all model and file-name text is plain text, no auto-links).
+- Result blocks carry `lang={document.language}` and `dir="auto"`. The language code is shown through `Intl.DisplayNames` (pl-PL). Field labels in "Dokument": Język, Typ, Tytuł, Data, Strony.
+
+### 11.1 Error map (every Worker code has a state)
+| Code (HTTP) | Title | Cause text | Retry |
+|---|---|---|---|
+| `rate_limited` (429) | Za dużo zapytań | Spróbuj ponownie za minutę. | yes, after the countdown |
+| `quota_exceeded` (429) | Limit darmowego API wyczerpany | Dzienny limit analiz został wykorzystany. Wróć później. | no |
+| `upstream_error` (502) | Usługa AI jest przeciążona | Spróbuj ponownie za chwilę. | yes |
+| `timeout` (504) and client timeout | Serwer nie odpowiedział | Analiza trwała zbyt długo. Spróbuj z krótszym plikiem. | yes |
+| `invalid_response` (502) | Nie udało się odczytać odpowiedzi | Model zwrócił niepoprawny wynik mimo ponownej próby. Spróbuj jeszcze raz. | yes |
+| `content_blocked` (422) | Treść zablokowana | Dostawca AI odmówił analizy tego pliku. | no |
+| `payload_too_large` (413) | Plik jest za duży do analizy | Wybierz mniejszy lub krótszy plik. | no |
+| `bad_request` (400), `forbidden_origin` (403) | Błąd aplikacji | Coś poszło nie tak po naszej stronie. | no |
+| `misconfigured`, `internal_error` (500) | Usługa chwilowo niedostępna | Spróbuj ponownie później. | no |
+| fetch error while online | Nie udało się połączyć z serwerem | Sprawdź połączenie i spróbuj ponownie. | yes |
+
+### 11.2 Long documents and the 10 requests/min limit
+- Requests are sent one at a time (no parallel calls), spaced at least 6 s apart. On 429 the client waits `Retry-After` (60 s), shows the countdown, and continues; finished chunks are kept and never sent again.
+- A run is capped at 12 requests (analysis chunks plus the summary call). A document that needs more is analysed up to the cap and the result says "Przeanalizowano strony 1-N z M" (pl-PL plurals).
+- Scan pages: the client renders JPEG so that one image is at most 700 000 base64 characters (8 images stay under the 8 MB body cap); quality is lowered until it fits. The Worker's per-image limit (1 500 000) stays as a safety net.
+- Slow runs: 28 s Worker budget per request plus the summary call can exceed 30 s on long files; the 30 s goal applies to a single-chunk text document.
