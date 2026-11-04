@@ -58,6 +58,8 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | The overload retry used up one of the three rate-limit retries | same audit | separate counters, test added |
 | The prompt rule "a date needs day, month and year" did not hold: the live model still returned 2024-03-01 for "Rev. March 2024" and 1983-01-01 / 1984-01-01 for bare years in the IRS W-9 | second live run of the W-9 after the prompt fix, compared with `pdftotext` | a prompt is a request, not a guarantee: dates of text pages are now checked in the browser against the text the model was given (`groundDates`), and dropped when the day is not stated; test first |
 | Merged key points and keywords by joining the lists and cutting at 7 and 15, so in a long document everything came from the first chunk | independent audit by a fresh reviewer agent (no conclusions in its prompt) | lists are interleaved across chunks before the cut; test first (red, then green) |
+| The quota error said "Limit darmowego API" and "Dzienny limit" after the project moved to a paid key with a monthly cap | owner question about what users are told when limits hit | text now "Limit usługi wyczerpany / Analiza jest chwilowo niedostępna"; two independent tests updated by the owner's decision |
+| Amounts came in document order, so the total (184 500 zł) hid behind "show all" while share capital came first | live contract run through the UI | prompt asks for the most important first; effect on the live model is checked after the Worker is deployed |
 | `npm install` failed with EPERM (root-owned `~/.npm`) | install output | not an AI mistake; worked around with `--cache` |
 
 ## What I understand and can explain

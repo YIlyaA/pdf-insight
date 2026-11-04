@@ -187,7 +187,7 @@ Prosecutor: 15 charges. Defender conceded 6 in full and 9 in part. Judgement: al
 | Code (HTTP) | Title | Cause text | Retry |
 |---|---|---|---|
 | `rate_limited` (429) | Za dużo zapytań | Spróbuj ponownie za minutę. | yes, after the countdown |
-| `quota_exceeded` (429) | Limit darmowego API wyczerpany | Dzienny limit analiz został wykorzystany. Wróć później. | no |
+| `quota_exceeded` (429) | Limit usługi wyczerpany | Analiza jest chwilowo niedostępna. Wróć później. | no |
 | `upstream_error` (502) | Usługa AI jest przeciążona | Spróbuj ponownie za chwilę. | yes |
 | `timeout` (504) and client timeout | Serwer nie odpowiedział | Analiza trwała zbyt długo. Spróbuj z krótszym plikiem. | yes |
 | `invalid_response` (502) | Nie udało się odczytać odpowiedzi | Model zwrócił niepoprawny wynik mimo ponownej próby. Spróbuj jeszcze raz. | yes |
