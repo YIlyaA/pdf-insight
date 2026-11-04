@@ -1,7 +1,26 @@
 import type { Insight } from './schema';
 
-/** Characters around the year that may hold the day: "12 marca 2026", "March 12, 2026", "2026-05-07". */
-const WINDOW = 20;
+/**
+ * Characters around the year that may hold the day: "12 października 2026" needs 12 before the
+ * year, "2026-05-07" needs 6 after it.
+ */
+const BEFORE = 18;
+const AFTER = 8;
+
+/** Numbers in the text between the two offsets, leaving out those cut by either edge ("10231" cut to "1"). */
+function wholeNumbers(text: string, from: number, to: number): number[] {
+  const start = Math.max(0, from - 1);
+  const end = Math.min(text.length, to + 1);
+  const slice = text.slice(start, end);
+  const found: number[] = [];
+  for (const m of slice.matchAll(/\d+/g)) {
+    const at = m.index ?? 0;
+    const cutLeft = at === 0 && start > 0;
+    const cutRight = at + m[0].length === slice.length && end < text.length;
+    if (!cutLeft && !cutRight) found.push(Number(m[0]));
+  }
+  return found;
+}
 
 /**
  * True when the text states the full date: the year appears as a standalone number with the day
@@ -14,13 +33,12 @@ function isStated(date: string, text: string): boolean {
   const wantedDay = Number(day);
   const yearAt = new RegExp(`(?<!\\d)${year}(?!\\d)`, 'g');
   for (const match of text.matchAll(yearAt)) {
-    const start = match.index ?? 0;
-    const near =
-      text.slice(Math.max(0, start - WINDOW), start) +
-      ' ' +
-      text.slice(start + year.length, start + year.length + WINDOW);
-    const numbers = near.match(/\d+/g) ?? [];
-    if (numbers.some((n) => Number(n) === wantedDay)) return true;
+    const at = match.index ?? 0;
+    const numbers = [
+      ...wholeNumbers(text, at - BEFORE, at),
+      ...wholeNumbers(text, at + year.length, at + year.length + AFTER),
+    ];
+    if (numbers.includes(wantedDay)) return true;
   }
   return false;
 }

@@ -34,6 +34,15 @@ describe('groundDates', () => {
     expect(kept(['2024-03-01'], 'Form W-9 (Rev. March 2024)\nCat. No. 10231X')).toEqual([]);
   });
 
+  it('does not take a day from the end of a longer number cut by the search window', () => {
+    const text = 'Cat. No. 10231X Form W-9 (Rev. 3-2024)\nForm W-9 (Rev. 3-2024) Page 2';
+    expect(kept(['2024-03-01'], text)).toEqual([]);
+  });
+
+  it('keeps a day written before the longest Polish month name', () => {
+    expect(kept(['2026-10-12'], 'Go-live: 12 października 2026 r.')).toEqual(['2026-10-12']);
+  });
+
   it('drops a date that comes from a lone year', () => {
     const text = 'accounts opened before 1984 and broker accounts active during 1983.';
     expect(kept(['1984-01-01', '1983-01-01'], text)).toEqual([]);
