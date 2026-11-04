@@ -1,4 +1,9 @@
-# PDF Insight
+<h1>
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo-dark.svg">
+    <img src="docs/logo-light.svg" alt="PDF Insight" height="56">
+  </picture>
+</h1>
 
 A web app that reads a PDF, writes a short summary (3–5 sentences, in the document's language) and turns the content into structured JSON. You can preview the result and download it as a `.json` file.
 
