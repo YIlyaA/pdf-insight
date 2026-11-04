@@ -142,6 +142,14 @@ interface Clock {
   deadline: number;
 }
 
+/** 429 with Retry-After, which the browser may read only if it is listed as exposed. */
+function rateLimited(cors: Record<string, string>): Response {
+  return fail('rate_limited', cors, {
+    'retry-after': '60',
+    'access-control-expose-headers': 'retry-after',
+  });
+}
+
 type Validated<T> = { ok: true; value: T } | { ok: false; error: string };
 
 /** Asks the model, validates the answer, retries once with a repair hint. */
@@ -296,10 +304,8 @@ async function route(
   if (!env.GEMINI_API_KEY) return fail('misconfigured', cors);
 
   const ip = limiterKey(request.headers.get('cf-connecting-ip'));
-  if (!(await allow(env.RATE_LIMITER, memoryLimiter, ip)))
-    return fail('rate_limited', cors, { 'retry-after': '60' });
-  if (!(await allow(env.GLOBAL_LIMITER, memoryGlobalLimiter, 'global')))
-    return fail('rate_limited', cors, { 'retry-after': '60' });
+  if (!(await allow(env.RATE_LIMITER, memoryLimiter, ip))) return rateLimited(cors);
+  if (!(await allow(env.GLOBAL_LIMITER, memoryGlobalLimiter, 'global'))) return rateLimited(cors);
 
   const text = await readBodyCapped(request, MAX_BODY_BYTES);
   if (text === null) return fail('payload_too_large', cors);
