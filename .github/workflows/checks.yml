@@ -118,3 +118,5 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL || 'https://pdf-insight-api.iluxa.workers.dev' }}

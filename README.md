@@ -4,9 +4,11 @@ A web app that reads a PDF, writes a short summary (3–5 sentences, in the docu
 
 **Demo:** https://yilyaa.github.io/pdf-insight/ (GitHub Pages)
 
-> **Status:** done so far: data schema, normalisation, chunking of long documents, result merging, PDF reading with scan detection. In progress: AI proxy (Cloudflare Worker), user interface, deployment. A screenshot is added at the end.
->
+![PDF Insight: result for a 12-page contract](docs/screenshot.png)
+
 > The user interface is in Polish on purpose: the task brief requires Polish messages.
+
+**Using it:** drop a PDF (or pick one), wait for the four steps (about 15–40 s depending on length), read the summary and the data, then download the JSON (`Pobierz JSON`) or copy the text or JSON. The last 10 results stay in this browser for 30 days.
 
 ## How it works
 
@@ -77,6 +79,7 @@ worker/           AI proxy (Cloudflare Worker)
 tests/            unit tests and generated test PDFs (tests/fixtures/generated)
 design/spec.md    interface design: flows, states, tokens, copy
 docs/plan.md      architecture, stages, edge-case matrix
+.github/workflows checks (lint, types, tests, build, security) and pages (deploy to GitHub Pages)
 ```
 
 ## Run locally
@@ -86,8 +89,11 @@ npm install
 cp .env.example .env     # VITE_API_URL = proxy address (not a secret)
 npm run dev
 npm test                 # unit tests
-npm run lint && npm run build
+npm run lint && npm run typecheck
+VITE_API_URL=https://… npm run build
 ```
+
+`npm run build` stops with an error when `VITE_API_URL` is missing: without it the build would silently drop the analysis code and every upload would fail in the browser. The Worker accepts only the demo origin, so a local page needs a dev proxy that sets that `Origin`, or your own Worker with `ALLOWED_ORIGINS` set to the local address (see `worker/`).
 
 Environment variables:
 
@@ -117,6 +123,18 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 | Free API quota used up, rate limit, no network, timeout | separate messages, retry button |
 | Instructions hidden in the PDF text | ignored (covered by a test fixture) |
 
+## Limits
+
+| Limit | Value | Where |
+|---|---|---|
+| File size | 10 MB | browser, checked before any request |
+| Requests per run | up to 12, one at a time, at least 6 s apart | browser; a longer document is analysed up to the cap and the result says which pages were covered |
+| Scan images | up to 8 per request, each at most 700 000 base64 characters | browser (JPEG quality and size are lowered until it fits) |
+| Requests per minute | 10 per IP address | Worker; on `429` the browser waits `Retry-After` and continues |
+| Free AI quota | shared by all visitors | Gemini free tier; when it is used up the app shows a separate message |
+| Time | one request is cut after 45 s in the browser, 28 s in the Worker | |
+| History | 10 results, 30 days, this browser only (`localStorage`), not shared between users | |
+
 ## Known limitations
 
 - The free API quota is shared by all demo users. When it runs out, analysis is temporarily unavailable.
@@ -125,6 +143,13 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 - The Worker cannot tell a real visitor from a script. A determined person can still use the global limit up for a few minutes at a time; a captcha (Cloudflare Turnstile) would close this and is not built.
 - A document with a hidden instruction can still make the model write a wrong summary of that document. It cannot change the data shape, other users' results or the app.
 - Amounts written like `1.234` or `1,234` are left out because they could mean 1.234 or 1234.
+- Scans: pages are rendered in the browser and read by the model; quality depends on the model. Blank pages are detected on the client and not sent. Scan decoding for JPX and JBIG2/CCITT images needs the wasm files that the build copies to `pdfjs/wasm/`.
+- Documents longer than the request cap are analysed only up to the cap (the result says `Przeanalizowano strony 1-N z M`).
+- A long contract can list dozens of amounts and dates; the lists collapse after 8 items.
+
+## License
+
+MIT, copyright (c) 2026 Illia Yanukovich. You may use and change the code; the copyright notice must stay. See [LICENSE](LICENSE).
 
 ## Working with AI
 

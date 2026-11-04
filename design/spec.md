@@ -11,11 +11,11 @@ UI language: Polish. Code and spec: English.
 
 ## 2. Flows
 ### F1. Analyse a PDF (happy path)
-1. Open page: header, drop zone, privacy notice, history (if any).
+1. Open page: header with logo, drop zone, history (if any). The privacy notice is the footer button "Prywatność" (owner decision 2026-11-04: no duplicate line under the zone).
 2. Drop a file or activate the drop zone (it is the only control; "Wybierz plik" is its visible label, not a second button).
 3. Client validation passes (PDF magic bytes, size ≤ 10 MB).
 4. Progress shows 4 steps: Wczytywanie > Odczyt tekstu > Analiza AI > Gotowe (long docs: "Analiza AI 2/5"; scans: "Rozpoznawanie stron skanowanych").
-5. Result: summary, key points, document facts, entities, amounts, dates, keywords; tabs "Podgląd" / "JSON"; buttons "Pobierz JSON", "Kopiuj JSON", "Analizuj kolejny plik".
+5. Result: summary, key points, document facts, entities, amounts, dates, keywords; tabs "Podgląd" / "JSON"; buttons "Pobierz JSON", "Kopiuj tekst" (plain text, `formatInsightText`), "Kopiuj JSON", "Analizuj kolejny plik".
 - Fails when:
   - wrong type / empty / >10 MB / unreadable / password-protected: inline error under the zone, no request sent, zone stays usable.
   - request failure: error panel with title, cause and next step. Which codes allow a retry, and the copy, are in section 11. Retry reruns only the chunks that did not finish.
@@ -28,7 +28,7 @@ UI language: Polish. Code and spec: English.
 ### F2. Open from history
 1. History list shows up to 10 recent analyses (file name, date, type).
 2. Select one: result view opens from localStorage, no request.
-3. History is stored in this browser only, for 30 days, max 10 entries; the privacy note says so. Every entry is re-validated with `InsightSchema` when read; invalid or expired entries are dropped. "Usuń" removes one entry; "Wyczyść historię" removes all (confirm inline, undo not needed: data is local and cheap).
+3. History is stored in this browser only, for 30 days, max 10 entries; the privacy dialog says so. Every entry is re-validated with `InsightSchema` when read; invalid or expired entries are dropped. "Usuń" removes one entry; "Wyczyść historię" removes all (confirm inline, undo not needed: data is local and cheap).
 - Fails when: localStorage disabled or entry corrupted: history hidden / entry skipped silently, app unaffected.
 
 ## 3. Information architecture
@@ -36,9 +36,10 @@ UI language: Polish. Code and spec: English.
 /pdf-insight/   (single screen, no router: avoids Pages 404 problem)
   header: name, short tagline
   main
-    UploadPanel (idle, contains PrivacyNote above the drop area) | ProgressPanel (running) | ErrorPanel | ResultPanel
+    UploadPanel (idle: drop area) | ProgressPanel (running) | ErrorPanel | ResultPanel
     HistoryList
-  footer: link to repo, "Dane przetwarzane przez Google Gemini"
+  footer: link to repo, "Prywatność" button
+  PrivacyDialog (native modal, opened from the footer button "Prywatność")
 ```
 | Screen | URL | Main job | Primary action | Content in priority order |
 |---|---|---|---|---|
@@ -59,16 +60,18 @@ Edge cases: 0/1/many amounts; 60 entities; 200-character file name; missing titl
 | Component | Purpose | Variants | States | Content limits | Keyboard / ARIA | Tokens |
 |---|---|---|---|---|---|---|
 | Button | actions | primary (lime), secondary (outline), ghost | default, hover, focus-visible, active, disabled, loading | label ≤ 24 chars | native button | `--accent`, `--border`, `--focus` |
-| DropZone | choose/drop PDF | idle, drag-over, error | + disabled | hint text 2 lines | one focusable control (`role="button"`, tabindex 0, Enter/Space), `aria-describedby` hint + privacy note + error, hidden `<input type=file accept=application/pdf>` (not focusable) | `--surface`, `--border-strong` |
+| DropZone | choose/drop PDF | idle (tall, centred, 48 px icon, the screen's one primary button), compact (row under the progress panel, secondary button), drag-over, error | + disabled | hint text 2 lines | one focusable control (`role="button"`, tabindex 0, Enter/Space), `aria-describedby` hint + error, hidden `<input type=file accept=application/pdf>` (not focusable) | `--surface`, `--border-strong`; dark theme only: faint lime glow (`box-shadow`, `--accent` at 9 %), the only glow in the app |
 | StepList | pipeline progress | 4 steps | pending, active, done, failed | step label ≤ 24 chars; counter counts requests of the current phase | `<ol>`, `aria-current="step"`, live region polite for step name | `--accent`, `--muted` |
 | ErrorPanel | explain failure | validation (inline), request failure (panel) | default | message ≤ 160 chars | `role="alert"`, heading receives focus | `--error` |
-| ResultSection | titled block | text, list, table | collapsed/expanded | lists collapse > 8 | `<section aria-labelledby>`; toggle is a button with `aria-expanded` | `--surface` |
-| FactsTable | document fields, amounts, dates | n/a | n/a | numbers right-aligned, tabular | `<table>` with `<th scope>` | `--mono` |
+| ResultHeader | file name (muted, only when a title exists), h2 = title or file name, fact chips | n/a | n/a | chips: type, "język <name>", pages, date (null date left out); wrap | `<header>` inside the result `<section>`; chips are a `<ul>` | `--border`, `--muted`, `--mono` 12 px |
+| ResultSection | titled block; Podsumowanie first and largest (20 px) | text, list, table | collapsed/expanded | lists collapse > 8 | `<section aria-labelledby>`; quiet label (12 px muted mono caps, no rule); toggle is a button with `aria-expanded` | `--surface` |
+| FactsTable | document fields, amounts, dates | n/a | n/a | amount and date values right-aligned from 640 px, tabular; "Dokument" values (incl. Strony) all left-aligned; amounts grouped (`1 234,50 zł`) | `<table>` with `<th scope>` | `--mono` |
 | Tabs | Podgląd / JSON | 2 tabs | selected | n/a | WAI-ARIA tabs, arrows, Home/End | `--accent` underline |
 | JsonView | pretty JSON | n/a | n/a | scroll box, max-height 60vh | `<pre tabindex=0>` + label; text only, never HTML | `--mono` |
 | HistoryItem | past result | n/a | hover, focus | name truncated | button + separate delete button with `aria-label` containing file name | `--surface` |
-| PrivacyNote | disclosure | n/a | n/a | 2 lines | plain text, visible before upload | `--muted` |
-| Toast-free | none; status uses live regions | | | | | |
+| PrivacyDialog | privacy details | n/a | open, closed | h2 + 4 items + "Zamknij"; fits 360 px, scrolls when taller than the viewport | native `<dialog>` with `showModal` (page inert, Esc closes); fallback when `showModal` is missing: `open` attribute + own Esc handling; accessible name from the h2; focus to "Zamknij" on open, back to the opener on close | `--surface`, `--border-strong`, `::backdrop` = `--bg` at 82 %; fade + 8 px rise (opacity/transform, off under reduced motion) |
+| Logo | brand mark left of the h1 | n/a | n/a | 32 px (40 px from 640) | inline SVG in an `aria-hidden` wrapper; the h1 text is the name; same drawing in `public/favicon.svg` | document outline `--text`, four scan-corner brackets `--accent-text` (lime in dark) |
+| Toast | one visible status plate at the bottom (copy, download, cancel), also the polite live region; clears after 3 s | | | | `role="status"` | `--surface`, `--border-strong` |
 
 ## 6. Tokens
 | Token | Light | Dark | Used for |
@@ -135,7 +138,10 @@ Contrast checked (computed with a script, WCAG formula):
 | drop hint | lub wybierz go z dysku. Tylko PDF, maks. 10 MB. | |
 | button | Wybierz plik | |
 | drag-over | Upuść plik, aby rozpocząć | |
-| privacy | Treść pliku zostanie wysłana do Google Gemini w celu analizy. Dostawca może ją przechowywać zgodnie z własnymi zasadami. Wynik zapisujemy tylko w tej przeglądarce. Nie wgrywaj dokumentów, których nie możesz udostępniać. | required by brief; placed inside the drop zone block, linked with `aria-describedby` |
+| footer button | Prywatność | opens the same dialog; replaces the old "Dane przetwarzane przez Google Gemini" |
+| dialog title | Prywatność i dane | h2 and accessible name |
+| dialog items | 1. Treść pliku (tekst albo obrazy stron) jest wysyłana do Google Gemini przez nasz serwer pośredniczący, żeby wykonać analizę. 2. Dostawca może ją przechowywać zgodnie z własnymi zasadami. 3. Wynik zapisujemy tylko w tej przeglądarce: do 10 analiz przez 30 dni. Możesz je usunąć w historii. 4. Nie wgrywaj dokumentów, których nie możesz udostępniać. | a list, exactly these four |
+| dialog close | Zamknij | |
 | err type | To nie jest plik PDF. Wybierz plik z rozszerzeniem .pdf. | |
 | err size | Plik jest za duży (maks. 10 MB). | show actual size |
 | err empty | Plik jest pusty. | |
@@ -156,7 +162,8 @@ Contrast checked (computed with a script, WCAG formula):
 | no data | Brak danych | for null / [] |
 | result tabs | Podgląd / JSON | |
 | download | Pobierz JSON | filename: name without `.pdf`, characters outside letters, digits, `-`, `_` replaced by `_`, then `.insight.json` |
-| copy | Kopiuj JSON / Skopiowano / Nie udało się skopiować | success and failure announced politely |
+| copy | Kopiuj tekst / Kopiuj JSON / Skopiowano / Nie udało się skopiować | success and failure announced politely in one region; "Kopiuj tekst" copies the plain-text layout of `formatInsightText` (empty sections left out) |
+| language chip | język <name> | result header, e.g. "język angielski" |
 | next | Analizuj kolejny plik | |
 | history title | Ostatnie analizy | |
 | delete | Usuń | `aria-label`: "Usuń analizę pliku <name>" |
@@ -165,10 +172,10 @@ Contrast checked (computed with a script, WCAG formula):
 | type labels | faktura, umowa, oferta, raport, inne | mapped from enum |
 
 Plural forms (pl-PL): strony (1 strona, 2-4 strony, 5+ stron) through `Intl.PluralRules`.
-Dates, amounts via `Intl` with `pl-PL`. Glossary: "analiza" = whole run; "wynik" = result; "plik" = uploaded PDF.
+Dates, amounts via `Intl` with `pl-PL`; amounts always group thousands (`useGrouping: 'always'`, so 4 digits read "1 234,50 zł"). Glossary: "analiza" = whole run; "wynik" = result; "plik" = uploaded PDF.
 
 ## 10. Images
-None. Logo is text; icons are inline SVG (own, no licence issue). No `design/image-ideas.md` entries.
+None. Logo is an own inline SVG mark next to the text name (document outline in four scan-corner brackets), also `public/favicon.svg`; icons are inline SVG (own, no licence issue). No `design/image-ideas.md` entries.
 
 ## 11. Verdict amendments (design trial, 2026-11-04)
 

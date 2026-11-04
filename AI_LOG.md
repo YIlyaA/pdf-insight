@@ -36,6 +36,19 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | Believed "CORS limits the API to my site" | live probe: `curl` with a fake `Origin` gets 200 | documented in README, added a global limiter and stricter per-client limit |
 | CI never ran the tests (the test job was a comment in the template) | reviewer | added a `tests` job and pinned the actions to commit hashes |
 | Added a Claude co-author trailer to commits | owner's request | local history rewritten before the first push |
+| Builder agents with worktree isolation could not write into the project folder; their code ended up in other worktrees | the project folder had no new files after the agents reported success | files copied by hand from each worktree, then checked in the main folder |
+| The test-writer wrote tests that did not pass `noUncheckedIndexedAccess` (`buttons[0]`, `runs[0]`), used non-breaking spaces in regular expressions and left unused parameters | `typecheck` and `lint` were red | fixed after the first run; `first()` helper added |
+| The first UI preview used an invented (mock) result, not a real one | owner asked whether it matched reality | ran the real 12-page contract through the live Worker (17.6 s) and checked sums and dates against the PDF text |
+| Replaced `onPrivacy={openPrivacy}` in the wrong component (MainPanel instead of Footer) when removing the notice line | `typecheck` failed | corrected the occurrence |
+| The spec said "no toast, status only in a live region", so the copy confirmation was invisible to sighted users | owner's question while looking at the result | added a visible status plate for 3 s with `role="status"` |
+| Rendered and JPEG-encoded every scan page before applying the 12-request cap | review in a fresh context (prosecutor agent) | test first (300-page scan must render at most 96 pages), then rendering stops at the cap |
+| Production build without `VITE_API_URL` succeeded and shipped an app that rejected every file | prosecutor agent built it without the variable | the build now fails with a clear message; CI sets the variable |
+| Did not pass `wasmUrl` to pdf.js, so black-and-white (CCITT/JBIG2) scans would not decode | defender agent ran a CCITT test file through pdf.js and saw the warning | build copies the wasm files, `wasmUrl` is passed; a generated black-and-white scan now renders |
+| Error text for a file just over the limit read "10 MB, maks. 10 MB" | real run through the UI with a file of 10 MB + 10 bytes | file size is rounded up (`10,1 MB`), test added |
+| Any error while `navigator.onLine` was false turned into "Brak połączenia", even a refused file | prosecutor agent | only network errors and client timeouts map to offline; test added |
+| Coverage line could claim pages that were never sent when a scan chunk started inside a text chunk | prosecutor and defender agents | `analyzedUpTo()` stops before the first unsent chunk; test added |
+| Pinned a GitHub Pages workflow with placeholder hashes in the first commit (a `sed` command failed silently) | defender agent noticed the placeholders | replaced with real commit hashes and amended the unpushed commit |
+| `npm install` failed with EPERM (root-owned `~/.npm`) | install output | not an AI mistake; worked around with `--cache` |
 
 ## What I understand and can explain
 
