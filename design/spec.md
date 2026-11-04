@@ -11,7 +11,7 @@ UI language: Polish. Code and spec: English.
 
 ## 2. Flows
 ### F1. Analyse a PDF (happy path)
-1. Open page: header with logo, drop zone, one-line notice "Plik zostanie wysłany do Google Gemini." with "Szczegóły" (opens the privacy dialog), history (if any).
+1. Open page: header with logo, drop zone, history (if any). The privacy notice is the footer button "Prywatność" (owner decision 2026-11-04: no duplicate line under the zone).
 2. Drop a file or activate the drop zone (it is the only control; "Wybierz plik" is its visible label, not a second button).
 3. Client validation passes (PDF magic bytes, size ≤ 10 MB).
 4. Progress shows 4 steps: Wczytywanie > Odczyt tekstu > Analiza AI > Gotowe (long docs: "Analiza AI 2/5"; scans: "Rozpoznawanie stron skanowanych").
@@ -36,10 +36,10 @@ UI language: Polish. Code and spec: English.
 /pdf-insight/   (single screen, no router: avoids Pages 404 problem)
   header: name, short tagline
   main
-    UploadPanel (idle: drop area, then the one-line PrivacyNotice + "Szczegóły") | ProgressPanel (running) | ErrorPanel | ResultPanel
+    UploadPanel (idle: drop area) | ProgressPanel (running) | ErrorPanel | ResultPanel
     HistoryList
   footer: link to repo, "Prywatność" button
-  PrivacyDialog (native modal, opened from "Szczegóły" or "Prywatność")
+  PrivacyDialog (native modal, opened from the footer button "Prywatność")
 ```
 | Screen | URL | Main job | Primary action | Content in priority order |
 |---|---|---|---|---|
@@ -60,7 +60,7 @@ Edge cases: 0/1/many amounts; 60 entities; 200-character file name; missing titl
 | Component | Purpose | Variants | States | Content limits | Keyboard / ARIA | Tokens |
 |---|---|---|---|---|---|---|
 | Button | actions | primary (lime), secondary (outline), ghost | default, hover, focus-visible, active, disabled, loading | label ≤ 24 chars | native button | `--accent`, `--border`, `--focus` |
-| DropZone | choose/drop PDF | idle (tall, centred, 48 px icon, the screen's one primary button), compact (row under the progress panel, secondary button), drag-over, error | + disabled | hint text 2 lines | one focusable control (`role="button"`, tabindex 0, Enter/Space), `aria-describedby` hint + notice line + error, hidden `<input type=file accept=application/pdf>` (not focusable) | `--surface`, `--border-strong`; dark theme only: faint lime glow (`box-shadow`, `--accent` at 9 %), the only glow in the app |
+| DropZone | choose/drop PDF | idle (tall, centred, 48 px icon, the screen's one primary button), compact (row under the progress panel, secondary button), drag-over, error | + disabled | hint text 2 lines | one focusable control (`role="button"`, tabindex 0, Enter/Space), `aria-describedby` hint + error, hidden `<input type=file accept=application/pdf>` (not focusable) | `--surface`, `--border-strong`; dark theme only: faint lime glow (`box-shadow`, `--accent` at 9 %), the only glow in the app |
 | StepList | pipeline progress | 4 steps | pending, active, done, failed | step label ≤ 24 chars; counter counts requests of the current phase | `<ol>`, `aria-current="step"`, live region polite for step name | `--accent`, `--muted` |
 | ErrorPanel | explain failure | validation (inline), request failure (panel) | default | message ≤ 160 chars | `role="alert"`, heading receives focus | `--error` |
 | ResultHeader | file name (muted, only when a title exists), h2 = title or file name, fact chips | n/a | n/a | chips: type, "język <name>", pages, date (null date left out); wrap | `<header>` inside the result `<section>`; chips are a `<ul>` | `--border`, `--muted`, `--mono` 12 px |
@@ -69,7 +69,6 @@ Edge cases: 0/1/many amounts; 60 entities; 200-character file name; missing titl
 | Tabs | Podgląd / JSON | 2 tabs | selected | n/a | WAI-ARIA tabs, arrows, Home/End | `--accent` underline |
 | JsonView | pretty JSON | n/a | n/a | scroll box, max-height 60vh | `<pre tabindex=0>` + label; text only, never HTML | `--mono` |
 | HistoryItem | past result | n/a | hover, focus | name truncated | button + separate delete button with `aria-label` containing file name | `--surface` |
-| PrivacyNotice | disclosure (brief: the file goes to an AI API) | n/a | n/a | 1 line + "Szczegóły" | plain text under the drop zone, in the zone's `aria-describedby`; "Szczegóły" is a text-styled button | `--muted` 14 px |
 | PrivacyDialog | privacy details | n/a | open, closed | h2 + 4 items + "Zamknij"; fits 360 px, scrolls when taller than the viewport | native `<dialog>` with `showModal` (page inert, Esc closes); fallback when `showModal` is missing: `open` attribute + own Esc handling; accessible name from the h2; focus to "Zamknij" on open, back to the opener on close | `--surface`, `--border-strong`, `::backdrop` = `--bg` at 82 %; fade + 8 px rise (opacity/transform, off under reduced motion) |
 | Logo | brand mark left of the h1 | n/a | n/a | 32 px (40 px from 640) | inline SVG in an `aria-hidden` wrapper; the h1 text is the name; same drawing in `public/favicon.svg` | document outline `--text`, four scan-corner brackets `--accent-text` (lime in dark) |
 | Toast-free | none; status uses live regions | | | | | |
@@ -139,8 +138,6 @@ Contrast checked (computed with a script, WCAG formula):
 | drop hint | lub wybierz go z dysku. Tylko PDF, maks. 10 MB. | |
 | button | Wybierz plik | |
 | drag-over | Upuść plik, aby rozpocząć | |
-| notice | Plik zostanie wysłany do Google Gemini. | required by brief; one line under the drop zone, linked with `aria-describedby` |
-| notice button | Szczegóły | opens the privacy dialog |
 | footer button | Prywatność | opens the same dialog; replaces the old "Dane przetwarzane przez Google Gemini" |
 | dialog title | Prywatność i dane | h2 and accessible name |
 | dialog items | 1. Treść pliku (tekst albo obrazy stron) jest wysyłana do Google Gemini przez nasz serwer pośredniczący, żeby wykonać analizę. 2. Dostawca może ją przechowywać zgodnie z własnymi zasadami. 3. Wynik zapisujemy tylko w tej przeglądarce: do 10 analiz przez 30 dni. Możesz je usunąć w historii. 4. Nie wgrywaj dokumentów, których nie możesz udostępniać. | a list, exactly these four |
