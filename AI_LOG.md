@@ -24,6 +24,7 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | Called `doc.destroy()` on a PDF.js document, but in version 6 the method is on the loading task | 11 tests failed with `doc.destroy is not a function` | switched to `task.destroy()` |
 | A test expected currency "UAH" in the Ukrainian offer, but the document uses "грн" | test was red with correct code | fixed the test, not the code |
 | Copied the recruiter's sample PDF into the repository | owner's remark before publishing | file removed from the whole history, rules added to `.gitignore` |
+| Wrote Worker tests that reused one `Response` object for several fetch calls | 3 tests failed with `upstream_error` although the code was right; a response body can be read only once | mocks now create a fresh `Response` per call, like the real `fetch` |
 | Added a Claude co-author trailer to commits | owner's request | local history rewritten before the first push |
 
 ## What I understand and can explain
