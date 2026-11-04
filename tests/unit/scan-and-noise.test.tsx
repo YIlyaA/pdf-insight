@@ -56,7 +56,8 @@ describe('list sizes from one model answer', () => {
     };
     const parsed = parseInsight(sanitizeModelOutput(raw, { fileName: 'a.pdf', totalPages: 1 }));
     if (!parsed.success) throw new Error(parsed.error);
-    expect(parsed.data.amounts.length).toBeLessThanOrEqual(15);
+    expect(parsed.data.amounts.length).toBe(15);
+    expect(parsed.data.dates.length).toBeGreaterThan(0);
     expect(parsed.data.dates.length).toBeLessThanOrEqual(15);
   });
 });

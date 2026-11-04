@@ -212,9 +212,9 @@ async function runWithFallback<T>(
       }
       if (error.kind === 'timeout') {
         // A stalled primary model must not end the request while the fallback still has time.
+        // A quota or overload answer from the primary is the more useful cause to report.
+        if (!seen) code = 'timeout';
         seen = true;
-        code = 'timeout';
-        upstreamStatus = undefined;
         continue;
       }
       const map = {

@@ -58,4 +58,21 @@ describe('one retry after a provider overload', () => {
     await expect(client.analyze(request, ctx())).rejects.toMatchObject({ code });
     expect(calls()).toBe(1);
   });
+
+  it('still waits out three rate limits after an overload retry', async () => {
+    const limited = () =>
+      new Response(JSON.stringify({ error: { code: 'rate_limited', message: 'm' } }), {
+        status: 429,
+        headers: { 'content-type': 'application/json', 'retry-after': '1' },
+      });
+    const { client, calls } = setup([
+      failure(502, 'upstream_error'),
+      limited(),
+      limited(),
+      limited(),
+      json(200, { insight: makeInsight() }),
+    ]);
+    await expect(client.analyze(request, ctx())).resolves.toBeTruthy();
+    expect(calls()).toBe(5);
+  });
 });

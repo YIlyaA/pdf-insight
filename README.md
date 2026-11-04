@@ -130,6 +130,7 @@ The summary and the data come from an AI model, so check them against the docume
 - Text read from a scan can contain misreadings (for example a company name with one wrong letter). The result then says: "Część treści odczytano ze skanu. Sprawdź nazwy i kwoty."
 - The model may list minor figures (a page fee, share capital); the prompt tells it to skip them, but it is not guaranteed.
 - A date is kept only when day, month and year are written; a bare year is not turned into 1 January.
+- The scan note is not shown again when a result is opened from the history.
 - The app does not check that a value really appears in the document.
 
 ## Limits
@@ -141,7 +142,7 @@ The summary and the data come from an AI model, so check them against the docume
 | Scan images | 4 pages per request (about 44 scanned pages per run), each image at most 700 000 base64 characters | browser (JPEG quality and size are lowered until it fits) |
 | Requests per minute | 10 per IP address | Worker; on `429` the browser waits `Retry-After` and continues |
 | Free AI quota | shared by all visitors | Gemini free tier; when it is used up the app shows a separate message |
-| Time | one request is cut after 45 s in the browser and 42 s in the Worker (one model call 36 s) | |
+| Time | one request is cut after 45 s in the browser and 38 s in the Worker (one model call 22 s, then the fallback model gets the rest) | |
 | Provider overload | one automatic retry after 2 s, then an error with a retry button | browser |
 | History | 10 results, 30 days, this browser only (`localStorage`), not shared between users | |
 
