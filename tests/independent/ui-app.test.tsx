@@ -51,19 +51,22 @@ function seedEntry(i: number, extra: Record<string, unknown> = {}) {
   };
 }
 
+function dropZone(): HTMLElement {
+  return screen.getByRole('button', { name: /Wybierz plik|Przeciągnij/ });
+}
+
 describe('idle screen', () => {
-  it('shows h1, tagline, a single drop zone and the privacy note', () => {
+  it('shows h1, tagline, a single drop zone and the one-line notice', () => {
     render(<App services={baseServices()} />);
     expect(screen.getByRole('heading', { level: 1, name: 'PDF Insight' })).toBeInTheDocument();
     expect(
       screen.getByText('Wgraj PDF, a dostaniesz krótkie podsumowanie i dane w formacie JSON.'),
     ).toBeInTheDocument();
-    const buttons = screen.getAllByRole('button');
-    expect(buttons).toHaveLength(1);
-    expect(first(buttons)).toHaveAttribute('tabindex', '0');
-    const ids = (first(buttons).getAttribute('aria-describedby') ?? '').split(/\s+/);
+    expect(screen.queryByText(/Treść pliku zostanie wysłana/)).not.toBeInTheDocument();
+    expect(dropZone()).toHaveAttribute('tabindex', '0');
+    const ids = (dropZone().getAttribute('aria-describedby') ?? '').split(/\s+/);
     const described = ids.map((id) => document.getElementById(id)?.textContent ?? '').join(' ');
-    expect(described).toContain('Treść pliku zostanie wysłana do Google Gemini');
+    expect(described).toContain('Plik zostanie wysłany do Google Gemini.');
   });
 
   it('hides history when empty', () => {
@@ -71,11 +74,12 @@ describe('idle screen', () => {
     expect(screen.queryByText('Ostatnie analizy')).not.toBeInTheDocument();
   });
 
-  it('shows footer link and provider note', () => {
+  it('shows footer link and the privacy button without the old provider note', () => {
     render(<App services={baseServices()} />);
     const footer = screen.getByRole('contentinfo');
     expect(within(footer).getByRole('link')).toHaveAttribute('href');
-    expect(within(footer).getByText('Dane przetwarzane przez Google Gemini')).toBeInTheDocument();
+    expect(within(footer).getByRole('button', { name: 'Prywatność' })).toBeInTheDocument();
+    expect(screen.queryByText('Dane przetwarzane przez Google Gemini')).not.toBeInTheDocument();
   });
 
   it.each(['{Enter}', ' '])('opens the file picker from the keyboard with %j', async (key) => {
@@ -83,14 +87,14 @@ describe('idle screen', () => {
     const user = userEvent.setup();
     render(<App services={baseServices()} />);
     await user.tab();
-    expect(screen.getByRole('button')).toHaveFocus();
+    expect(dropZone()).toHaveFocus();
     await user.keyboard(key);
     expect(click).toHaveBeenCalled();
   });
 
   it('shows drag-over text', () => {
     render(<App services={baseServices()} />);
-    fireEvent.dragEnter(screen.getByRole('button'), {
+    fireEvent.dragEnter(dropZone(), {
       dataTransfer: { files: [], types: ['Files'] },
     });
     expect(screen.getByText('Upuść plik, aby rozpocząć')).toBeInTheDocument();
@@ -113,7 +117,7 @@ describe('validation and pdf errors', () => {
     const alert = await screen.findByRole('alert');
     expect(alert).toHaveTextContent(message);
     expect(analyze).not.toHaveBeenCalled();
-    const ids = (screen.getByRole('button').getAttribute('aria-describedby') ?? '').split(/\s+/);
+    const ids = (dropZone().getAttribute('aria-describedby') ?? '').split(/\s+/);
     expect(ids).toContain(alert.id);
   });
 
@@ -132,7 +136,7 @@ describe('validation and pdf errors', () => {
     );
     pick(container, pdfFile());
     expect(await screen.findByRole('alert')).toHaveTextContent(text);
-    expect(screen.getByRole('button')).toBeInTheDocument();
+    expect(dropZone()).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Anuluj' })).not.toBeInTheDocument();
   });
 });
