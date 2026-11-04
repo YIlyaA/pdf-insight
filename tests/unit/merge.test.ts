@@ -107,6 +107,16 @@ describe('mergeInsights', () => {
     expect(m.keywords).toHaveLength(15);
   });
 
+  it('takes key points and keywords from every part, not only the first', () => {
+    const many = (n: number, p: string) => Array.from({ length: n }, (_, i) => `${p}${i}`);
+    const parts = ['a', 'b', 'c', 'd'].map((p) =>
+      base({ keyPoints: many(7, p), keywords: many(15, p) }),
+    );
+    const m = mergeInsights(parts);
+    expect(m.keyPoints).toEqual(['a0', 'b0', 'c0', 'd0', 'a1', 'b1', 'c1']);
+    expect(new Set(m.keywords.map((k) => k[0]))).toEqual(new Set(['a', 'b', 'c', 'd']));
+  });
+
   it('keeps fileName and pages from the first part', () => {
     const m = mergeInsights([
       base(),
