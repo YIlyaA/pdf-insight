@@ -56,17 +56,6 @@ export function InsightView({ insight }: { insight: Insight }) {
         <ResultSection title={COPY.sections.keyPoints}>
           <TextList items={insight.keyPoints} lang={lang} />
         </ResultSection>
-      </div>
-      <div className="result-column">
-        <ResultSection title={COPY.sections.document}>
-          <FactsTable rows={documentRows(insight)} />
-        </ResultSection>
-        <ResultSection title={COPY.sections.entities}>
-          <h4 className="result-subtitle">{COPY.organizations}</h4>
-          <TextList items={insight.entities.organizations} lang={lang} />
-          <h4 className="result-subtitle">{COPY.people}</h4>
-          <TextList items={insight.entities.people} lang={lang} />
-        </ResultSection>
         <ResultSection title={COPY.sections.amounts}>
           {amountGroups.length === 0 ? (
             <NoData />
@@ -85,6 +74,17 @@ export function InsightView({ insight }: { insight: Insight }) {
               />
             ))
           )}
+        </ResultSection>
+      </div>
+      <div className="result-column">
+        <ResultSection title={COPY.sections.document}>
+          <FactsTable rows={documentRows(insight)} />
+        </ResultSection>
+        <ResultSection title={COPY.sections.entities}>
+          <h4 className="result-subtitle">{COPY.organizations}</h4>
+          <TextList items={insight.entities.organizations} lang={lang} />
+          <h4 className="result-subtitle">{COPY.people}</h4>
+          <TextList items={insight.entities.people} lang={lang} />
         </ResultSection>
         <ResultSection title={COPY.sections.dates}>
           {dateRows.length === 0 ? <NoData /> : <FactsTable rows={dateRows} />}

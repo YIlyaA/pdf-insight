@@ -1028,7 +1028,7 @@ button {
   }
 }
 
-/* 1024+: result in two columns (summary + key points left, facts and entities right). */
+/* 1024+: two balanced columns: summary, key points and amounts left; document, entities, dates and keywords right. */
 @media (min-width: 1024px) {
   .result-grid {
     grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
