@@ -29,8 +29,8 @@ const TIMEOUT: ErrorView = {
 const VIEWS: Record<ClientErrorCode, ErrorView> = {
   rate_limited: { title: 'Za dużo zapytań', cause: 'Spróbuj ponownie za minutę.', retry: true },
   quota_exceeded: {
-    title: 'Limit darmowego API wyczerpany',
-    cause: 'Dzienny limit analiz został wykorzystany. Wróć później.',
+    title: 'Limit usługi wyczerpany',
+    cause: 'Analiza jest chwilowo niedostępna. Wróć później.',
     retry: false,
   },
   upstream_error: {

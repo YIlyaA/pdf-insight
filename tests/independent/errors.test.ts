@@ -12,8 +12,8 @@ const TABLE: Array<[ClientErrorCode, { title: string; cause: string; retry: bool
   [
     'quota_exceeded',
     {
-      title: 'Limit darmowego API wyczerpany',
-      cause: 'Dzienny limit analiz został wykorzystany. Wróć później.',
+      title: 'Limit usługi wyczerpany',
+      cause: 'Analiza jest chwilowo niedostępna. Wróć później.',
       retry: false,
     },
   ],

@@ -140,7 +140,7 @@ The summary and the data come from an AI model, so check them against the docume
 | File size | 10 MB | browser, checked before any request |
 | Requests per run | up to 12, one at a time, at least 6 s apart | browser; a longer document is analysed up to the cap and the result says which pages were covered |
 | Scan images | 4 pages per request (about 44 scanned pages per run), each image at most 700 000 base64 characters | browser (JPEG quality and size are lowered until it fits) |
-| Requests per minute | 10 per IP address | Worker; on `429` the browser waits `Retry-After` and continues |
+| Requests per minute | 10 per IP address, 30 for all visitors together | Worker; on `429` the browser waits `Retry-After` and continues |
 | Free AI quota | shared by all visitors | Gemini free tier; when it is used up the app shows a separate message |
 | Time | one request is cut after 45 s in the browser and 38 s in the Worker (one model call 22 s, then the fallback model gets the rest) | |
 | Provider overload | one automatic retry after 2 s, then an error with a retry button | browser |
@@ -153,6 +153,7 @@ The summary and the data come from an AI model, so check them against the docume
 - Scan recognition quality depends on the AI model.
 - The Worker cannot tell a real visitor from a script. A determined person can still use the global limit up for a few minutes at a time; a captcha (Cloudflare Turnstile) would close this and is not built.
 - A document with a hidden instruction can still make the model write a wrong summary of that document. It cannot change the data shape, other users' results or the app.
+- Dates from text pages are checked against the text: a date is kept only when the day and the year stand next to each other in the document. Dates read from scans cannot be checked this way.
 - Amounts written like `1.234` or `1,234` are left out because they could mean 1.234 or 1234.
 - Scans: pages are rendered in the browser and read by the model; quality depends on the model. Blank pages are detected on the client and not sent. Scan decoding for JPX and JBIG2/CCITT images needs the wasm files that the build copies to `pdfjs/wasm/`.
 - Documents longer than the request cap are analysed only up to the cap (the result says `Przeanalizowano strony 1-N z M`).

@@ -1,6 +1,7 @@
 import type { WorkerClient } from '../api/client';
 import { splitIntoChunks } from './chunk';
 import { AppError } from './errors';
+import { groundDates } from './groundDates';
 import { mergeInsights } from './merge';
 import { PdfError, extractPages, type PdfJsLike } from './pdfText';
 import { MAX_CHUNK_CHARS, type AnalyzeRequest } from './protocol';
@@ -189,7 +190,10 @@ async function analyseChunks(
       signal,
       onRateLimitWait: options.onRateLimitWait,
     });
-    state.insights.set(index, insight);
+    state.insights.set(
+      index,
+      chunk.images.length === 0 ? groundDates(insight, chunk.text) : insight,
+    );
     throwIfAborted(signal);
     done += 1;
     options.onProgress({ phase: 'analyzing', done, total: count });
