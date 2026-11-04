@@ -20,14 +20,53 @@ export const ERROR_CODES = [
   'misconfigured',
   'not_found',
   'method_not_allowed',
+  'internal_error',
 ] as const;
 export type ErrorCode = (typeof ERROR_CODES)[number];
 
-const ImageSchema = z.object({
-  page: z.number().int().min(1),
-  mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
-  dataBase64: z.string().min(1).max(MAX_IMAGE_BASE64_CHARS),
-});
+const BASE64 = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
+
+const startsWith = (bytes: Uint8Array, signature: (number | null)[]): boolean =>
+  signature.every((byte, i) => byte === null || bytes[i] === byte);
+
+/** True when the base64 data is well formed and its first bytes match the declared image type. */
+export function imageMatchesMime(mimeType: string, dataBase64: string): boolean {
+  if (!BASE64.test(dataBase64)) return false;
+  let bytes: Uint8Array;
+  try {
+    bytes = Uint8Array.from(atob(dataBase64.slice(0, 16)), (c) => c.charCodeAt(0));
+  } catch {
+    return false;
+  }
+  if (mimeType === 'image/jpeg') return startsWith(bytes, [0xff, 0xd8, 0xff]);
+  if (mimeType === 'image/png')
+    return startsWith(bytes, [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]);
+  // "RIFF" + 4 size bytes + "WEBP"
+  return startsWith(bytes, [
+    0x52,
+    0x49,
+    0x46,
+    0x46,
+    null,
+    null,
+    null,
+    null,
+    0x57,
+    0x45,
+    0x42,
+    0x50,
+  ]);
+}
+
+const ImageSchema = z
+  .object({
+    page: z.number().int().min(1),
+    mimeType: z.enum(['image/jpeg', 'image/png', 'image/webp']),
+    dataBase64: z.string().min(1).max(MAX_IMAGE_BASE64_CHARS),
+  })
+  .refine((image) => imageMatchesMime(image.mimeType, image.dataBase64), {
+    message: 'Image data is not valid base64 or does not match its type',
+  });
 
 export const AnalyzeRequestSchema = z
   .object({

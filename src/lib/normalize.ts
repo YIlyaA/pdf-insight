@@ -1,4 +1,13 @@
-/** Parses an amount written in Polish, English or mixed notation. Returns null if ambiguous. */
+const isGrouped = (groups: string[]): boolean =>
+  groups.length > 1 &&
+  /^\d{1,3}$/.test(groups[0] ?? '') &&
+  groups.slice(1).every((g) => /^\d{3}$/.test(g));
+
+/**
+ * Parses an amount written in Polish, English or mixed notation. Returns null if it is ambiguous
+ * or malformed: a wrong number is worse than a missing one. A single separator followed by exactly
+ * three digits ("1.234", "1,234") could be a decimal or a thousands mark, so it is rejected.
+ */
 export function parseAmount(text: string): number | null {
   const cleaned = text.replace(/[^\d.,-]/g, '');
   if (!/\d/.test(cleaned)) return null;
@@ -12,12 +21,24 @@ export function parseAmount(text: string): number | null {
   if (lastComma !== -1 && lastDot !== -1) {
     const decimalSep = lastComma > lastDot ? ',' : '.';
     const thousandsSep = decimalSep === ',' ? '.' : ',';
-    normalized = body.split(thousandsSep).join('').replace(decimalSep, '.');
+    const [whole = '', fraction = '', ...rest] = body.split(decimalSep);
+    if (rest.length > 0 || !/^\d+$/.test(fraction)) return null;
+    const groups = whole.split(thousandsSep);
+    if (!isGrouped(groups)) return null;
+    normalized = `${groups.join('')}.${fraction}`;
   } else if (lastComma !== -1 || lastDot !== -1) {
-    const sep = lastComma !== -1 ? ',' : '.';
-    const groups = body.split(sep);
-    if (groups.length === 2) normalized = `${groups[0]}.${groups[1]}`;
-    else if (groups.slice(1).every((g) => g.length === 3)) normalized = groups.join('');
+    const groups = body.split(lastComma !== -1 ? ',' : '.');
+    if (
+      groups.some((g) => !/^\d*$/.test(g)) ||
+      groups.some((g, i) => i < groups.length - 1 && g === '')
+    )
+      return null;
+    if (groups.length === 2) {
+      const [whole = '', fraction = ''] = groups;
+      if (fraction === '') return null;
+      if (fraction.length === 3 && whole !== '0' && whole.length <= 3) return null;
+      normalized = `${whole || '0'}.${fraction}`;
+    } else if (isGrouped(groups)) normalized = groups.join('');
     else return null;
   } else {
     normalized = body;

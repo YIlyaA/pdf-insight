@@ -22,6 +22,36 @@ describe('parseAmount', () => {
   it.each(['', 'abc', '--', '1,2,3,4x', 'zł'])('returns null for %j', (input) => {
     expect(parseAmount(input)).toBeNull();
   });
+
+  // One separator followed by exactly three digits could be a decimal or a thousands mark.
+  // A wrong number is worse than a missing one, so these return null.
+  it.each(['1.234', '1,234', '12.345', '999,999', '-1.234'])(
+    'returns null for the ambiguous %j',
+    (input) => {
+      expect(parseAmount(input)).toBeNull();
+    },
+  );
+
+  it.each([
+    ['0.123', 0.123],
+    ['0,125', 0.125],
+    ['1234.567', 1234.567],
+    ['1.234.567', 1234567],
+    ['1,234,567', 1234567],
+    ['1.234,567', 1234.567],
+    ['1,234.567', 1234.567],
+    ['12,5', 12.5],
+    ['12.50', 12.5],
+  ])('parses the unambiguous %s', (input, expected) => {
+    expect(parseAmount(input)).toBe(expected);
+  });
+
+  it.each(['1.23,4', '1,234,56', '1.234,5.6', '12,34.56,78', '1..2', '.,'])(
+    'returns null for malformed grouping %j',
+    (input) => {
+      expect(parseAmount(input)).toBeNull();
+    },
+  );
 });
 
 describe('normalizeCurrency', () => {
