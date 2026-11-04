@@ -441,3 +441,15 @@ describe('odd inputs', () => {
     expect(text.match(/<\/?document>/g)).toHaveLength(2); // only the real opening and closing tags
   });
 });
+
+describe('rate limit response is readable by the browser', () => {
+  it.each([
+    ['per-client', { RATE_LIMITER: { limit: async () => ({ success: false }) } }],
+    ['global', { GLOBAL_LIMITER: { limit: async () => ({ success: false }) } }],
+  ])('exposes retry-after on a %s 429', async (_n, over) => {
+    const res = await handle(post(body()), env(over as Partial<Env>));
+    expect(res.status).toBe(429);
+    expect(res.headers.get('retry-after')).toBe('60');
+    expect(res.headers.get('access-control-expose-headers')).toMatch(/retry-after/i);
+  });
+});
