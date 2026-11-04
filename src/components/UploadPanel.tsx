@@ -1,38 +1,18 @@
-import { useId, type Ref } from 'react';
-import { COPY } from './copy';
+import type { Ref } from 'react';
 import { DropZone } from './DropZone';
 
 interface UploadPanelProps {
   error: string | null;
   onFile(file: File): void;
   onOpenPicker(): void;
-  /** Opens the "Prywatność i dane" dialog; the opener gets focus back when it closes. */
-  onPrivacy(opener: HTMLElement): void;
   zoneRef?: Ref<HTMLDivElement>;
 }
 
-/** Idle state: the drop zone, then one line saying where the file goes, with a details button. */
-export function UploadPanel({ error, onFile, onOpenPicker, onPrivacy, zoneRef }: UploadPanelProps) {
-  const noticeId = useId();
+/** Idle state: the drop zone. Privacy lives in the footer dialog, not here. */
+export function UploadPanel({ error, onFile, onOpenPicker, zoneRef }: UploadPanelProps) {
   return (
     <div className="upload">
-      <DropZone
-        ref={zoneRef}
-        error={error}
-        describedBy={noticeId}
-        onFile={onFile}
-        onOpenPicker={onOpenPicker}
-      />
-      <p className="notice">
-        <span id={noticeId}>{COPY.privacyNotice}</span>{' '}
-        <button
-          type="button"
-          className="link-button"
-          onClick={(event) => onPrivacy(event.currentTarget)}
-        >
-          {COPY.privacyMore}
-        </button>
-      </p>
+      <DropZone ref={zoneRef} error={error} onFile={onFile} onOpenPicker={onOpenPicker} />
     </div>
   );
 }

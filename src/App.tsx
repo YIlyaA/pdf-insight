@@ -106,7 +106,6 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
             zoneRef={zoneRef}
             onFile={onFile}
             onOpenPicker={openPicker}
-            onPrivacy={openPrivacy}
             onCopy={(text) => void copy(text)}
           />
           {state.view.kind === 'idle' && history.length > 0 && (

@@ -28,10 +28,6 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function dropZone(): HTMLElement {
-  return screen.getByRole('button', { name: /Wybierz plik|Przeciągnij/ });
-}
-
 async function toResult(overrides = {}, insight = makeInsight()) {
   const utils = render(
     <App services={baseServices({ analyze: async () => resultOutcome(insight), ...overrides })} />,
@@ -42,17 +38,10 @@ async function toResult(overrides = {}, insight = makeInsight()) {
 }
 
 describe('privacy notice', () => {
-  it('shows one line and a Szczegóły button', () => {
+  it('has no notice line or Szczegóły button on the idle screen', () => {
     render(<App services={baseServices()} />);
-    expect(screen.getByText(/Plik zostanie wysłany do Google Gemini\./)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Szczegóły' })).toBeInTheDocument();
-  });
-
-  it('is referenced by the drop zone aria-describedby', () => {
-    render(<App services={baseServices()} />);
-    const ids = (dropZone().getAttribute('aria-describedby') ?? '').split(/\s+/);
-    const text = ids.map((id) => document.getElementById(id)?.textContent ?? '').join(' ');
-    expect(text).toContain('Plik zostanie wysłany do Google Gemini.');
+    expect(screen.queryByText(/Plik zostanie wysłany/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Szczegóły' })).not.toBeInTheDocument();
   });
 
   it('footer has a Prywatność button', () => {
@@ -64,9 +53,9 @@ describe('privacy notice', () => {
 });
 
 describe('privacy dialog', () => {
-  it.each(['Szczegóły', 'Prywatność'])('opens from %s with the exact content', async (opener) => {
+  it('opens from the footer button with the exact content', async () => {
     render(<App services={baseServices()} />);
-    await userEvent.click(screen.getByRole('button', { name: opener }));
+    await userEvent.click(screen.getByRole('button', { name: 'Prywatność' }));
     const dialog = screen.getByRole('dialog', { name: 'Prywatność i dane' });
     expect(
       within(dialog).getByRole('heading', { level: 2, name: 'Prywatność i dane' }),
@@ -79,9 +68,9 @@ describe('privacy dialog', () => {
     expect(within(dialog).getByRole('button', { name: 'Zamknij' })).toBeInTheDocument();
   });
 
-  it.each(['Szczegóły', 'Prywatność'])('closes with Zamknij and refocuses %s', async (opener) => {
+  it('closes with Zamknij and refocuses the footer button', async () => {
     render(<App services={baseServices()} />);
-    const button = screen.getByRole('button', { name: opener });
+    const button = screen.getByRole('button', { name: 'Prywatność' });
     await userEvent.click(button);
     await userEvent.click(screen.getByRole('button', { name: 'Zamknij' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -90,7 +79,7 @@ describe('privacy dialog', () => {
 
   it('closes with Escape (native cancel then close) and refocuses the opener', async () => {
     render(<App services={baseServices()} />);
-    const button = screen.getByRole('button', { name: 'Szczegóły' });
+    const button = screen.getByRole('button', { name: 'Prywatność' });
     await userEvent.click(button);
     const dialog = screen.getByRole('dialog');
     act(() => {

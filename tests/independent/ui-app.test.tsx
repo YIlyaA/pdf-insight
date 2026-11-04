@@ -56,7 +56,7 @@ function dropZone(): HTMLElement {
 }
 
 describe('idle screen', () => {
-  it('shows h1, tagline, a single drop zone and the one-line notice', () => {
+  it('shows h1, tagline, a single drop zone and no notice paragraph', () => {
     render(<App services={baseServices()} />);
     expect(screen.getByRole('heading', { level: 1, name: 'PDF Insight' })).toBeInTheDocument();
     expect(
@@ -66,7 +66,8 @@ describe('idle screen', () => {
     expect(dropZone()).toHaveAttribute('tabindex', '0');
     const ids = (dropZone().getAttribute('aria-describedby') ?? '').split(/\s+/);
     const described = ids.map((id) => document.getElementById(id)?.textContent ?? '').join(' ');
-    expect(described).toContain('Plik zostanie wysłany do Google Gemini.');
+    expect(described).toContain('Tylko PDF, maks. 10 MB.');
+    expect(screen.queryByText(/Plik zostanie wysłany/)).not.toBeInTheDocument();
   });
 
   it('hides history when empty', () => {

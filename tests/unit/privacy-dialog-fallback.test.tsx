@@ -20,7 +20,7 @@ afterEach(() => {
 describe('privacy dialog without showModal', () => {
   it('opens with the open attribute and moves focus into the dialog', async () => {
     render(<App services={baseServices()} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Szczegóły' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Prywatność' }));
     const dialog = screen.getByRole('dialog', { name: 'Prywatność i dane' });
     expect(dialog).toHaveAttribute('open');
     expect(screen.getByRole('button', { name: 'Zamknij' })).toHaveFocus();
@@ -39,7 +39,7 @@ describe('privacy dialog without showModal', () => {
   it('closes with Zamknij and returns focus to the opener', async () => {
     const user = userEvent.setup();
     render(<App services={baseServices()} />);
-    const opener = screen.getByRole('button', { name: 'Szczegóły' });
+    const opener = screen.getByRole('button', { name: 'Prywatność' });
     await user.click(opener);
     await user.click(screen.getByRole('button', { name: 'Zamknij' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

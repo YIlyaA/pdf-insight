@@ -6,8 +6,6 @@ export const COPY = {
   dropHint: 'lub wybierz go z dysku. Tylko PDF, maks. 10 MB.',
   dropButton: 'Wybierz plik',
   dragOver: 'Upuść plik, aby rozpocząć',
-  privacyNotice: 'Plik zostanie wysłany do Google Gemini.',
-  privacyMore: 'Szczegóły',
   privacyOpen: 'Prywatność',
   privacyTitle: 'Prywatność i dane',
   privacyItems: [

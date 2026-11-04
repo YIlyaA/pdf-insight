@@ -15,13 +15,12 @@ interface MainPanelProps {
   zoneRef: Ref<HTMLDivElement>;
   onFile(file: File): void;
   onOpenPicker(): void;
-  onPrivacy(opener: HTMLElement): void;
   onCopy(text: string): void;
 }
 
 /** Exactly one panel per state; a state change fades the new panel in (150 ms, opacity/transform). */
 export function MainPanel(props: MainPanelProps) {
-  const { analysis, now, headingRef, zoneRef, onFile, onOpenPicker, onPrivacy, onCopy } = props;
+  const { analysis, now, headingRef, zoneRef, onFile, onOpenPicker, onCopy } = props;
   const { view, zoneError } = analysis.state;
 
   function panel() {
@@ -33,7 +32,6 @@ export function MainPanel(props: MainPanelProps) {
             zoneRef={zoneRef}
             onFile={onFile}
             onOpenPicker={onOpenPicker}
-            onPrivacy={onPrivacy}
           />
         );
       case 'running':
