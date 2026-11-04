@@ -56,6 +56,7 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | The model returned 17 dates although the prompt asked for at most 12 | a degraded 3-page contract scan | the sanitiser now caps amounts and dates at 15 per answer; the prompt also skips share capital and publication fees |
 | Set the Worker to 36 s per model call in a 42 s budget, so the fallback model got only 6 s after a primary timeout (my test used a 20 ms timeout and missed it); the Worker clock also started after the upload while the browser's 45 s timer started before | independent audit by a fresh reviewer agent | 22 s per call and a 38 s budget, a config test checks both, and a quota answer is no longer overwritten by a later timeout |
 | The overload retry used up one of the three rate-limit retries | same audit | separate counters, test added |
+| The prompt rule "a date needs day, month and year" did not hold: the live model still returned 2024-03-01 for "Rev. March 2024" and 1983-01-01 / 1984-01-01 for bare years in the IRS W-9 | second live run of the W-9 after the prompt fix, compared with `pdftotext` | a prompt is a request, not a guarantee: dates of text pages are now checked in the browser against the text the model was given (`groundDates`), and dropped when the day is not stated; test first |
 | `npm install` failed with EPERM (root-owned `~/.npm`) | install output | not an AI mistake; worked around with `--cache` |
 
 ## What I understand and can explain

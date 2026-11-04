@@ -153,6 +153,7 @@ The summary and the data come from an AI model, so check them against the docume
 - Scan recognition quality depends on the AI model.
 - The Worker cannot tell a real visitor from a script. A determined person can still use the global limit up for a few minutes at a time; a captcha (Cloudflare Turnstile) would close this and is not built.
 - A document with a hidden instruction can still make the model write a wrong summary of that document. It cannot change the data shape, other users' results or the app.
+- Dates from text pages are checked against the text: a date is kept only when the day and the year stand next to each other in the document. Dates read from scans cannot be checked this way.
 - Amounts written like `1.234` or `1,234` are left out because they could mean 1.234 or 1234.
 - Scans: pages are rendered in the browser and read by the model; quality depends on the model. Blank pages are detected on the client and not sent. Scan decoding for JPX and JBIG2/CCITT images needs the wasm files that the build copies to `pdfjs/wasm/`.
 - Documents longer than the request cap are analysed only up to the cap (the result says `Przeanalizowano strony 1-N z M`).
