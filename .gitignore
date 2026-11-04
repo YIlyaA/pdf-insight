@@ -32,3 +32,9 @@ venv/
 Thumbs.db
 *.swp
 *.local
+
+# materials supplied by the recruiter and local-only samples: never publish
+/*.pdf
+Brief_*.pdf
+Test_PDF_*.pdf
+tests/fixtures/local/
