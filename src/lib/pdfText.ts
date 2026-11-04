@@ -14,7 +14,7 @@ export class PdfError extends Error {
 
 /** The part of pdf.js we use; lets tests inject the Node build and the app the browser build. */
 export interface PdfJsLike {
-  getDocument(source: { data: Uint8Array }): PdfLoadingTaskLike;
+  getDocument(source: { data: Uint8Array; isEvalSupported?: boolean }): PdfLoadingTaskLike;
 }
 
 interface PdfLoadingTaskLike {
@@ -60,7 +60,7 @@ export async function extractPages(
   options: { minChars?: number } = {},
 ): Promise<ExtractedPdf> {
   const minChars = options.minChars ?? DEFAULT_MIN_CHARS;
-  const task = pdfjs.getDocument({ data: data.slice() });
+  const task = pdfjs.getDocument({ data: data.slice(), isEvalSupported: false });
   let doc: PdfDocumentLike;
   try {
     doc = await task.promise;
