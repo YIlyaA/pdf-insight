@@ -210,6 +210,13 @@ async function runWithFallback<T>(
         upstreamStatus = error.status;
         continue;
       }
+      if (error.kind === 'timeout') {
+        // A stalled primary model must not end the request while the fallback still has time.
+        seen = true;
+        code = 'timeout';
+        upstreamStatus = undefined;
+        continue;
+      }
       const map = {
         upstream: 'upstream_error',
         auth: 'misconfigured',
