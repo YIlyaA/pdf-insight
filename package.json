@@ -7,8 +7,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "lint": "eslint . && prettier --check --no-error-on-unmatched-pattern src tests/*.ts tests/*.tsx worker *.ts *.js *.json index.html",
-    "format": "prettier --write src tests/*.ts tests/*.tsx worker *.ts *.js index.html",
+    "lint": "eslint . && prettier --check --no-error-on-unmatched-pattern src tests worker *.ts *.js *.json index.html",
+    "format": "prettier --write src tests worker *.ts *.js index.html",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
   },
@@ -38,7 +38,8 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.72.1",
     "vite": "^8.3.5",
-    "vitest": "^4.1.12"
+    "vitest": "^4.1.12",
+    "wrangler": "^4.157.0"
   },
   "overrides": {
     "minimatch": "^11.0.1"
