@@ -10,3 +10,25 @@ dist/
 .dev.vars
 *.log
 .DS_Store
+
+# build, cache, coverage
+coverage/
+.vite/
+.eslintcache
+*.tsbuildinfo
+test-results/
+playwright-report/
+worker/dist/
+
+# python (fixture script)
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# editors and OS
+.idea/
+.vscode/
+Thumbs.db
+*.swp
+*.local
