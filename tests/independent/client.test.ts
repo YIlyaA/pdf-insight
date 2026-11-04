@@ -67,14 +67,19 @@ const ctx = () => ({ signal: new AbortController().signal });
 const sum = (values: number[]) => values.reduce((a, b) => a + b, 0);
 
 describe('configuration and connectivity', () => {
-  it.each([undefined, ''])('rejects not_configured before any fetch (baseUrl %j)', async (baseUrl) => {
-    const { client, calls } = setup([ok], { baseUrl });
-    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({ code: 'not_configured' });
-    await expect(client.summarize(summarizeRequest, ctx())).rejects.toMatchObject({
-      code: 'not_configured',
-    });
-    expect(calls).toHaveLength(0);
-  });
+  it.each([undefined, ''])(
+    'rejects not_configured before any fetch (baseUrl %j)',
+    async (baseUrl) => {
+      const { client, calls } = setup([ok], { baseUrl });
+      await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({
+        code: 'not_configured',
+      });
+      await expect(client.summarize(summarizeRequest, ctx())).rejects.toMatchObject({
+        code: 'not_configured',
+      });
+      expect(calls).toHaveLength(0);
+    },
+  );
 
   it('rejects offline before sending when isOnline() is false', async () => {
     const { client, calls } = setup([ok], { isOnline: () => false });
@@ -140,15 +145,24 @@ describe('responses', () => {
   it.each([
     ['empty insight object', { insight: {} }],
     ['missing insight', {}],
-    ['insight with invalid date', { insight: { ...makeInsight(), document: { ...makeInsight().document, date: '2026-02-30' } } }],
+    [
+      'insight with invalid date',
+      {
+        insight: { ...makeInsight(), document: { ...makeInsight().document, date: '2026-02-30' } },
+      },
+    ],
   ])('maps a 200 with %s to invalid_response', async (_name, body) => {
     const { client } = setup([() => json(200, body)]);
-    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({ code: 'invalid_response' });
+    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({
+      code: 'invalid_response',
+    });
   });
 
   it('maps a 200 with a non-JSON body to invalid_response', async () => {
     const { client } = setup([() => new Response('<html>', { status: 200 })]);
-    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({ code: 'invalid_response' });
+    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({
+      code: 'invalid_response',
+    });
   });
 
   it('returns the summary string', async () => {
@@ -228,7 +242,9 @@ describe('timeout', () => {
         init.signal?.addEventListener('abort', () => reject(new DOMException('x', 'AbortError')));
       });
     const { client } = setup([hang], { timeoutMs: 20 });
-    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({ code: 'client_timeout' });
+    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({
+      code: 'client_timeout',
+    });
   });
 });
 
@@ -241,7 +257,9 @@ describe('caller abort', () => {
         return Promise.reject(new TypeError('Failed to fetch'));
       },
     ]);
-    await expect(client.analyze(analyzeRequest, { signal: controller.signal })).rejects.toMatchObject({
+    await expect(
+      client.analyze(analyzeRequest, { signal: controller.signal }),
+    ).rejects.toMatchObject({
       code: 'aborted',
     });
   });
@@ -255,7 +273,9 @@ describe('caller abort', () => {
       },
     });
     await client.analyze(analyzeRequest, ctx());
-    await expect(client.analyze(analyzeRequest, { signal: controller.signal })).rejects.toMatchObject({
+    await expect(
+      client.analyze(analyzeRequest, { signal: controller.signal }),
+    ).rejects.toMatchObject({
       code: 'aborted',
     });
     expect(calls).toHaveLength(1);
@@ -278,8 +298,14 @@ describe('caller abort', () => {
 });
 
 describe('429 handling', () => {
-  const limited = (retryAfter?: string): Handler => () =>
-    json(429, errorBody('rate_limited'), retryAfter === undefined ? {} : { 'Retry-After': retryAfter });
+  const limited =
+    (retryAfter?: string): Handler =>
+    () =>
+      json(
+        429,
+        errorBody('rate_limited'),
+        retryAfter === undefined ? {} : { 'Retry-After': retryAfter },
+      );
 
   it('waits Retry-After with a per-second countdown to 0, then retries once and succeeds', async () => {
     const { client, calls } = setup([limited('3'), ok]);
@@ -327,7 +353,9 @@ describe('429 handling', () => {
 
   it('gives up with rate_limited after maxRateLimitRetries retries', async () => {
     const { client, calls } = setup([limited('1')], { maxRateLimitRetries: 2 });
-    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({ code: 'rate_limited' });
+    await expect(client.analyze(analyzeRequest, ctx())).rejects.toMatchObject({
+      code: 'rate_limited',
+    });
     expect(calls).toHaveLength(3);
   });
 

@@ -66,9 +66,12 @@ describe('loadHistory', () => {
     expect(loadHistory(s, NOW).map((e) => e.id)).toEqual(['fresh']);
   });
 
-  it.each(['not json{', '{"a":1}', '"text"', 'null'])('treats corrupt storage %j as empty', (raw) => {
-    expect(loadHistory(memoryStorage(raw), NOW)).toEqual([]);
-  });
+  it.each(['not json{', '{"a":1}', '"text"', 'null'])(
+    'treats corrupt storage %j as empty',
+    (raw) => {
+      expect(loadHistory(memoryStorage(raw), NOW)).toEqual([]);
+    },
+  );
 
   it('skips an entry whose insight fails InsightSchema while keeping the others', () => {
     const good = entry('good', NOW - 1000);
@@ -106,7 +109,8 @@ describe('addHistoryEntry', () => {
   it('keeps at most 10 entries and drops the oldest', () => {
     const s = memoryStorage();
     let list: HistoryEntry[] = [];
-    for (let i = 0; i < 12; i += 1) list = addHistoryEntry(s, entry(`e${i}`, NOW - 100_000 + i), NOW);
+    for (let i = 0; i < 12; i += 1)
+      list = addHistoryEntry(s, entry(`e${i}`, NOW - 100_000 + i), NOW);
     expect(list).toHaveLength(10);
     expect(list[0]?.id).toBe('e11');
     expect(list[9]?.id).toBe('e2');

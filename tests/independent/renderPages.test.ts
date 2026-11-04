@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { fitImage, isBlankPixels } from '../../src/lib/renderPages';
 
-function rgba(width: number, height: number, pixel: (x: number, y: number) => number): Uint8ClampedArray {
+function rgba(
+  width: number,
+  height: number,
+  pixel: (x: number, y: number) => number,
+): Uint8ClampedArray {
   const data = new Uint8ClampedArray(width * height * 4);
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
@@ -35,7 +39,9 @@ describe('isBlankPixels', () => {
 
 describe('fitImage', () => {
   it('returns the first encoding when it fits (quality 0.85, scale 1)', () => {
-    const encode = vi.fn((_q: number, _s: number) => 'x'.repeat(100));
+    const encode = vi.fn((quality: number, scale: number) =>
+      'x'.repeat(quality > 0 && scale > 0 ? 100 : 100),
+    );
     expect(fitImage(encode, 1000)).toBe('x'.repeat(100));
     expect(encode).toHaveBeenCalledTimes(1);
     expect(encode.mock.calls[0]?.[0]).toBeCloseTo(0.85);

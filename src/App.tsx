@@ -1,3 +1,128 @@
-export function App() {
-  return <h1>PDF Insight</h1>;
+import { MotionConfig } from 'motion/react';
+import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Footer } from './components/Footer';
+import { Header } from './components/Header';
+import { HistoryList } from './components/HistoryList';
+import { MainPanel } from './components/MainPanel';
+import { COPY } from './components/copy';
+import { useAnalysis } from './hooks/useAnalysis';
+import {
+  addHistoryEntry,
+  clearHistory,
+  loadHistory,
+  removeHistoryEntry,
+  type HistoryEntry,
+} from './lib/history';
+import type { Insight } from './lib/schema';
+import { createDefaultServices, type AppServices } from './services';
+
+export type { AppServices, RunContext } from './services';
+
+function newId(now: number): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${now}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function App({ services: overrides }: { services?: Partial<AppServices> }) {
+  const services = useMemo(() => ({ ...createDefaultServices(), ...overrides }), [overrides]);
+  const [history, setHistory] = useState(() => loadHistory(services.storage, services.now()));
+
+  const onResult = useCallback(
+    (fileName: string, insight: Insight) => {
+      const now = services.now();
+      const entry: HistoryEntry = { id: newId(now), fileName, savedAt: now, insight };
+      setHistory(addHistoryEntry(services.storage, entry, now));
+    },
+    [services],
+  );
+
+  const analysis = useAnalysis(services, onResult);
+  const { state, selectFile, announce } = analysis;
+
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  const zoneRef = useRef<HTMLDivElement>(null);
+  const historyHeadingRef = useRef<HTMLHeadingElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Move focus after a state change, once the new panel is in the DOM.
+  useLayoutEffect(() => {
+    if (!state.focus) return;
+    const targets = { heading: headingRef, title: titleRef, zone: zoneRef };
+    targets[state.focus.target].current?.focus();
+  }, [state.focus]);
+
+  const openPicker = useCallback(() => inputRef.current?.click(), []);
+  const onFile = useCallback((file: File) => void selectFile(file), [selectFile]);
+
+  const copy = useCallback(
+    async (json: string) => {
+      try {
+        await services.writeClipboard(json);
+        announce(COPY.copied);
+      } catch {
+        announce(COPY.copyFailed);
+      }
+    },
+    [services, announce],
+  );
+
+  function removeEntry(id: string) {
+    const next = removeHistoryEntry(services.storage, id, services.now());
+    setHistory(next);
+    (next.length > 0 ? historyHeadingRef : zoneRef).current?.focus();
+  }
+
+  function clearAll() {
+    clearHistory(services.storage);
+    setHistory([]);
+    zoneRef.current?.focus();
+  }
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <div className="app">
+        <Header titleRef={titleRef} />
+        <main className="main">
+          <MainPanel
+            analysis={analysis}
+            now={services.now}
+            headingRef={headingRef}
+            zoneRef={zoneRef}
+            onFile={onFile}
+            onOpenPicker={openPicker}
+            onCopy={(json) => void copy(json)}
+          />
+          {state.view.kind === 'idle' && history.length > 0 && (
+            <HistoryList
+              entries={history}
+              headingRef={historyHeadingRef}
+              onOpen={(entry) => analysis.show(entry.fileName, entry.insight)}
+              onRemove={removeEntry}
+              onClear={clearAll}
+            />
+          )}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="visually-hidden"
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (file) onFile(file);
+            }}
+          />
+          <p className="visually-hidden" aria-live="polite">
+            {state.announcement}
+          </p>
+        </main>
+        <Footer />
+      </div>
+    </MotionConfig>
+  );
 }

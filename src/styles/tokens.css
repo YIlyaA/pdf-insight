@@ -1,0 +1,73 @@
+/* Design tokens from design/spec.md section 6. Dark is the primary design. */
+:root {
+  --bg: #f6f7f4;
+  --surface: #ffffff;
+  --border: #d5d9d0;
+  --border-strong: #7c8478;
+  --text: #141612;
+  --muted: #4b5247;
+  --accent: #c6f432;
+  --on-accent: #141612;
+  --accent-text: #3f5a00;
+  --error: #b3261e;
+  --focus: #3f5a00;
+
+  --font-ui: 'Manrope', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --text-12: 0.75rem;
+  --text-14: 0.875rem;
+  --text-16: 1rem;
+  --text-20: 1.25rem;
+  --text-24: 1.5rem;
+  --text-32: 2rem;
+  --weight-regular: 500;
+  --weight-bold: 700;
+  --weight-mono: 400;
+  --leading-body: 1.5;
+  --leading-heading: 1.2;
+  --measure: 70ch;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+
+  --radius-control: 6px;
+  --radius-panel: 10px;
+  --line: 1px;
+  --line-strong: 2px;
+  --focus-width: 2px;
+  --focus-offset: 2px;
+  --control-height: 44px;
+  --icon-size: 20px;
+  --content-max: 960px;
+  --json-max-height: 60vh;
+
+  --duration-state: 150ms;
+  --duration-step: 200ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.3, 1);
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e0f0e;
+    --surface: #161816;
+    --border: #2a2d2a;
+    --border-strong: #6a706a;
+    --text: #ecefea;
+    --muted: #a3a9a0;
+    --accent: #c6f432;
+    --on-accent: #0e0f0e;
+    --accent-text: #c6f432;
+    --error: #ff8a80;
+    --focus: #c6f432;
+
+    color-scheme: dark;
+  }
+}

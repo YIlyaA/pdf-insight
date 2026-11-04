@@ -28,10 +28,10 @@ describe('formatDate', () => {
 describe('formatAmount', () => {
   it('formats a known currency in pl-PL', () => {
     const text = formatAmount(1234.5, 'PLN');
-    expect(text).toMatch(/^1[\s  ]?234,50[\s ]*(zł|PLN)$/);
+    expect(text).toMatch(/^1[\s\u00a0\u202f]?234,50[\s\u00a0]*(zł|PLN)$/);
   });
   it('falls back to "1 234,50 XYZ" for an unknown currency code', () => {
-    expect(formatAmount(1234.5, 'XYZ')).toMatch(/^1[\s  ]?234,50[\s ]XYZ$/);
+    expect(formatAmount(1234.5, 'XYZ')).toMatch(/^1[\s\u00a0\u202f]?234,50[\s\u00a0]XYZ$/);
   });
 });
 

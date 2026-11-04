@@ -1,7 +1,11 @@
 // @vitest-environment node
 import { AppError, describeError, type ClientErrorCode } from '../../src/lib/errors';
 
-const APP_ERROR = { title: 'Błąd aplikacji', cause: 'Coś poszło nie tak po naszej stronie.', retry: false };
+const APP_ERROR = {
+  title: 'Błąd aplikacji',
+  cause: 'Coś poszło nie tak po naszej stronie.',
+  retry: false,
+};
 
 const TABLE: Array<[ClientErrorCode, { title: string; cause: string; retry: boolean }]> = [
   ['rate_limited', { title: 'Za dużo zapytań', cause: 'Spróbuj ponownie za minutę.', retry: true }],
@@ -65,10 +69,7 @@ const TABLE: Array<[ClientErrorCode, { title: string; cause: string; retry: bool
     'internal_error',
     { title: 'Usługa chwilowo niedostępna', cause: 'Spróbuj ponownie później.', retry: false },
   ],
-  [
-    'offline',
-    { title: 'Brak połączenia', cause: 'Brak połączenia z internetem.', retry: true },
-  ],
+  ['offline', { title: 'Brak połączenia', cause: 'Brak połączenia z internetem.', retry: true }],
   [
     'network',
     {

@@ -26,11 +26,16 @@ export function makeInsight(overrides: Record<string, unknown> = {}): Insight {
   } as Insight;
 }
 
-export function resultOutcome(insight: Insight = makeInsight(), coverage: { analyzedTo: number; totalPages: number } | null = null): Outcome {
+export function resultOutcome(
+  insight: Insight = makeInsight(),
+  coverage: { analyzedTo: number; totalPages: number } | null = null,
+): Outcome {
   return { kind: 'result', insight, coverage };
 }
 
-export function memoryStorage(initial: Record<string, string> = {}): StorageLike & { data: Map<string, string> } {
+export function memoryStorage(
+  initial: Record<string, string> = {},
+): StorageLike & { data: Map<string, string> } {
   const data = new Map<string, string>(Object.entries(initial));
   return {
     data,
@@ -103,4 +108,11 @@ export async function flush(): Promise<void> {
     await Promise.resolve();
     await Promise.resolve();
   });
+}
+
+/** First item of a list; fails the test when the list is empty (noUncheckedIndexedAccess). */
+export function first<T>(items: readonly T[]): T {
+  const item = items[0];
+  if (item === undefined) throw new Error('Expected a non-empty list');
+  return item;
 }

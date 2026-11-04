@@ -47,7 +47,12 @@ function fakeRenderer(blankPages: number[] = []) {
   const renderer: PageRenderer = {
     render: async (page: number): Promise<RenderedPage> => {
       rendered.push(page);
-      return { page, mimeType: 'image/jpeg', dataBase64: '/9j/4AAQ', blank: blankPages.includes(page) };
+      return {
+        page,
+        mimeType: 'image/jpeg',
+        dataBase64: '/9j/4AAQ',
+        blank: blankPages.includes(page),
+      };
     },
     destroy: async () => undefined,
   };
@@ -115,7 +120,11 @@ async function run(
 ): Promise<RunResult> {
   const progress: Progress[] = [];
   const waits: number[] = [];
-  const deps: PipelineDeps = { pdfjs, openRenderer: rendererFake.openRenderer, client: fake.client };
+  const deps: PipelineDeps = {
+    pdfjs,
+    openRenderer: rendererFake.openRenderer,
+    client: fake.client,
+  };
   const outcome = await runPipeline(extra.file ?? makeFile(), deps, {
     signal: extra.signal ?? new AbortController().signal,
     state: extra.state ?? createRunState(),
@@ -161,7 +170,9 @@ describe('single chunk text document', () => {
   it('forwards the rate-limit countdown and the run signal to the client', async () => {
     const controller = new AbortController();
     const fake = fakeClient({ onAnalyze: (_r, ctx) => ctx.onRateLimitWait?.(5) });
-    const { waits } = await run(fakePdfJs([SHORT]), fake, fakeRenderer(), { signal: controller.signal });
+    const { waits } = await run(fakePdfJs([SHORT]), fake, fakeRenderer(), {
+      signal: controller.signal,
+    });
     expect(waits).toEqual([5]);
   });
 });
@@ -174,7 +185,10 @@ describe('multi-chunk text document', () => {
     expect(fake.analyzeCalls.every((c) => c.request.chunk.total === 3)).toBe(true);
     expect(fake.maxConcurrent()).toBe(1);
     expect(fake.summarizeCalls).toHaveLength(1);
-    expect(fake.summarizeCalls[0]).toEqual({ language: 'pl', summaries: ['sum-0', 'sum-1', 'sum-2'] });
+    expect(fake.summarizeCalls[0]).toEqual({
+      language: 'pl',
+      summaries: ['sum-0', 'sum-1', 'sum-2'],
+    });
     const insight = insightOf(outcome);
     expect(insight.summary).toBe('FINAL');
     expect(insight.keywords).toEqual(['k0', 'k1', 'k2']);
@@ -194,7 +208,10 @@ describe('request cap', () => {
 
   it('analyses only the first 11 of 13 chunks and reports coverage', async () => {
     const fake = fakeClient();
-    const { outcome, progress } = await run(fakePdfJs(Array.from({ length: 13 }, () => LONG)), fake);
+    const { outcome, progress } = await run(
+      fakePdfJs(Array.from({ length: 13 }, () => LONG)),
+      fake,
+    );
     expect(fake.analyzeCalls).toHaveLength(11);
     expect(fake.summarizeCalls).toHaveLength(1);
     expect(fake.summarizeCalls[0]?.summaries).toHaveLength(11);
@@ -286,7 +303,9 @@ describe('retry with the same RunState', () => {
       },
     });
     const pdfjs = fakePdfJs([LONG, LONG, LONG]);
-    await expect(run(pdfjs, fake, fakeRenderer(), { state })).rejects.toMatchObject({ code: 'network' });
+    await expect(run(pdfjs, fake, fakeRenderer(), { state })).rejects.toMatchObject({
+      code: 'network',
+    });
     expect(fake.analyzeCalls.map((c) => c.request.chunk.index)).toEqual([0, 1, 2]);
     fail = false;
     const { outcome } = await run(pdfjs, fake, fakeRenderer(), { state });
@@ -380,7 +399,9 @@ describe('progress events', () => {
       (p): p is Extract<Progress, { phase: 'analyzing' }> => p.phase === 'analyzing',
     );
     expect(analyzing.every((p) => p.total === 3 && p.done >= 0 && p.done <= 3)).toBe(true);
-    expect(analyzing.map((p) => p.done)).toEqual([...analyzing.map((p) => p.done)].sort((a, b) => a - b));
+    expect(analyzing.map((p) => p.done)).toEqual(
+      [...analyzing.map((p) => p.done)].sort((a, b) => a - b),
+    );
     expect(analyzing[analyzing.length - 1]?.done).toBe(3);
   });
 
