@@ -110,9 +110,11 @@ async function renderScanChunks(
     };
     for (const [i, page] of scanPages.entries()) {
       throwIfAborted(options.signal);
+      if (page !== previous + 1 || batch.length === MAX_IMAGES_PER_REQUEST) flush();
+      // One chunk more than a run can send keeps `total > count`, so the result reports partial coverage.
+      if (chunks.length >= MAX_REQUESTS_PER_RUN) break;
       options.onProgress({ phase: 'scanning', page: i + 1, total: scanPages.length });
       const rendered = await renderPage(renderer, page);
-      if (page !== previous + 1 || batch.length === MAX_IMAGES_PER_REQUEST) flush();
       previous = page;
       if (!rendered.blank) {
         batch.push({ page, mimeType: rendered.mimeType, dataBase64: rendered.dataBase64 });
