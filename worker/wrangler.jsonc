@@ -9,10 +9,11 @@
   ],
   "vars": {
     "ALLOWED_ORIGINS": "https://yilyaa.github.io",
-    "GEMINI_MODEL": "gemini-3.6-flash",
-    "GEMINI_FALLBACK_MODEL": "gemini-3.5-flash-lite",
-    // The free Gemini tier answers in 10-25 s at busy times. The browser waits 45 s per request.
-    "GEMINI_TIMEOUT_MS": "28000",
+    "GEMINI_MODEL": "gemini-3.5-flash-lite",
+    "GEMINI_FALLBACK_MODEL": "gemini-3.6-flash",
+    // Measured 4 Nov 2026 on a 22 000-character chunk: flash-lite 21-24 s (5 of 5 ok), 3.6-flash 24-40 s (2 of 5 ok at a 28 s limit).
+    // The browser waits 45 s per request.
+    "GEMINI_TIMEOUT_MS": "36000",
     "GEMINI_TOTAL_BUDGET_MS": "42000",
   },
 }
