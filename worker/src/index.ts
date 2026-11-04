@@ -24,8 +24,8 @@ interface Deps {
   fetchImpl?: typeof fetch;
 }
 
-const DEFAULT_MODEL = 'gemini-2.5-flash';
-const DEFAULT_FALLBACK_MODEL = 'gemini-2.5-flash-lite';
+const DEFAULT_MODEL = 'gemini-3.6-flash';
+const DEFAULT_FALLBACK_MODEL = 'gemini-3.5-flash-lite';
 const DEFAULT_TIMEOUT_MS = 25_000;
 
 const memoryLimiter = createMemoryLimiter(20, 60_000);
@@ -87,6 +87,20 @@ function fail(
   return json(body, STATUS[code], { ...cors, ...extra });
 }
 
+function failUpstream(
+  result: { code: ErrorCode; upstreamStatus?: number },
+  cors: Record<string, string>,
+): Response {
+  const extra: Record<string, string> =
+    result.upstreamStatus === undefined
+      ? {}
+      : {
+          'x-upstream-status': String(result.upstreamStatus),
+          'access-control-expose-headers': 'x-upstream-status',
+        };
+  return fail(result.code, cors, extra);
+}
+
 type Validated<T> = { ok: true; value: T } | { ok: false; error: string };
 
 /** Asks the model, validates the answer, retries once with a repair hint. */
@@ -120,7 +134,7 @@ async function runWithFallback<T>(
   fetchImpl: typeof fetch,
   build: (hint?: string) => ModelRequest,
   validate: (raw: unknown) => Validated<T>,
-): Promise<{ value: T } | { code: ErrorCode }> {
+): Promise<{ value: T } | { code: ErrorCode; upstreamStatus?: number }> {
   const models = [
     ...new Set([
       env.GEMINI_MODEL ?? DEFAULT_MODEL,
@@ -128,14 +142,16 @@ async function runWithFallback<T>(
     ]),
   ];
   let code: ErrorCode = 'upstream_error';
+  let upstreamStatus: number | undefined;
   for (const model of models) {
     try {
       const result = await generate(env, fetchImpl, model, build, validate);
       return result === 'invalid' ? { code: 'invalid_response' } : { value: result };
     } catch (error) {
       if (!(error instanceof GeminiError)) throw error;
-      if (error.kind === 'quota') {
-        code = 'quota_exceeded';
+      if (error.kind === 'quota' || error.kind === 'overloaded') {
+        code = error.kind === 'quota' ? 'quota_exceeded' : 'upstream_error';
+        upstreamStatus = error.status;
         continue;
       }
       const map = {
@@ -144,10 +160,10 @@ async function runWithFallback<T>(
         timeout: 'timeout',
         blocked: 'content_blocked',
       } as const;
-      return { code: map[error.kind as keyof typeof map] };
+      return { code: map[error.kind as keyof typeof map], upstreamStatus: error.status };
     }
   }
-  return { code };
+  return { code, upstreamStatus };
 }
 
 export async function handle(request: Request, env: Env, deps: Deps = {}): Promise<Response> {
@@ -209,7 +225,9 @@ export async function handle(request: Request, env: Env, deps: Deps = {}): Promi
           : { ok: false, error: checked.error };
       },
     );
-    return 'code' in result ? fail(result.code, cors) : json({ insight: result.value }, 200, cors);
+    return 'code' in result
+      ? failUpstream(result, cors)
+      : json({ insight: result.value }, 200, cors);
   }
 
   const parsed = SummarizeRequestSchema.safeParse(payload);
@@ -229,7 +247,7 @@ export async function handle(request: Request, env: Env, deps: Deps = {}): Promi
         : { ok: false, error: 'summary: Required' };
     },
   );
-  return 'code' in result ? fail(result.code, cors) : json({ summary: result.value }, 200, cors);
+  return 'code' in result ? failUpstream(result, cors) : json({ summary: result.value }, 200, cors);
 }
 
 export default {

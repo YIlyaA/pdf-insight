@@ -25,6 +25,9 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | A test expected currency "UAH" in the Ukrainian offer, but the document uses "грн" | test was red with correct code | fixed the test, not the code |
 | Copied the recruiter's sample PDF into the repository | owner's remark before publishing | file removed from the whole history, rules added to `.gitignore` |
 | Wrote Worker tests that reused one `Response` object for several fetch calls | 3 tests failed with `upstream_error` although the code was right; a response body can be read only once | mocks now create a fresh `Response` per call, like the real `fetch` |
+| Chose Gemini model names `gemini-2.5-*` from memory | first live call returned HTTP 404 from Google | read the official model list, switched to `gemini-3.6-flash` with `gemini-3.5-flash-lite` as fallback |
+| Treated only quota errors (429) as a reason to switch model | live calls returned HTTP 503 (overloaded) 3 times in a row | added a test first, then fallback on 503 too; 2 live calls then returned 200 |
+| Hid provider errors completely, so the 404 was impossible to diagnose | debugging the live call | added only the numeric status in an `x-upstream-status` header, never the provider message |
 | Added a Claude co-author trailer to commits | owner's request | local history rewritten before the first push |
 
 ## What I understand and can explain
