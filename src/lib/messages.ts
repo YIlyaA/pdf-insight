@@ -5,8 +5,9 @@ export const MESSAGES = {
   errCorrupt: 'Nie udało się odczytać pliku. Może być uszkodzony.',
   errPassword: 'Plik jest chroniony hasłem. Zdejmij zabezpieczenie i spróbuj ponownie.',
   errTooLarge: (sizeBytes: number, maxBytes: number): string => {
-    const toMb = (n: number) =>
-      (n / (1024 * 1024)).toLocaleString('pl-PL', { maximumFractionDigits: 1 });
-    return `Plik jest za duży (${toMb(sizeBytes)} MB, maks. ${toMb(maxBytes)} MB).`;
+    const mb = (n: number) => n / (1024 * 1024);
+    const format = (n: number) => n.toLocaleString('pl-PL', { maximumFractionDigits: 1 });
+    // Round the file size up: a file over the limit must never read as "10 MB, maks. 10 MB".
+    return `Plik jest za duży (${format(Math.ceil(mb(sizeBytes) * 10) / 10)} MB, maks. ${format(mb(maxBytes))} MB).`;
   },
 } as const;

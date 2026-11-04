@@ -63,6 +63,9 @@ export function useAnalysis(
         if (!current()) return;
         controller.current = null;
         if (outcome.kind === 'result') onResult(target.name, outcome.insight);
+        // Nothing can be retried after a finished run: release the page images and the file.
+        file.current = null;
+        runState.current = null;
         dispatch({ type: 'finish', fileName: target.name, outcome });
       } catch (error) {
         if (!current()) return;
@@ -76,10 +79,12 @@ export function useAnalysis(
           dispatch({ type: 'reset', focus: 'title' });
           return;
         }
+        // Only a lost connection can be blamed on being offline; other causes stay as reported.
+        const lostConnection = code === 'network' || code === 'client_timeout';
         dispatch({
           type: 'fail',
           fileName: target.name,
-          code: services.isOnline() ? code : 'offline',
+          code: lostConnection && !services.isOnline() ? 'offline' : code,
         });
       }
     },
