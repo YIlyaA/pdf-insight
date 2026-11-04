@@ -26,6 +26,7 @@ export const COPY = {
   otherFile: 'Wybierz inny plik',
   empty: 'Nie znaleziono tekstu w tym pliku.',
   noData: 'Brak danych',
+  scanNote: 'Część treści odczytano ze skanu. Sprawdź nazwy i kwoty.',
   tabPreview: 'Podgląd',
   tabJson: 'JSON',
   download: 'Pobierz JSON',

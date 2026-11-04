@@ -50,6 +50,10 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | Pinned a GitHub Pages workflow with placeholder hashes in the first commit (a `sed` command failed silently) | defender agent noticed the placeholders | replaced with real commit hashes and amended the unpushed commit |
 | Tuned the Worker time limits by trial runs on the live free quota (about 20 calls), which used up the free Gemini quota before I had read its limits | owner's complaint; the live run then returned 429 | stopped all live probing, read the official rate-limit and thinking docs, owner switched to a paid prepaid key; settings are now chosen from measured numbers in `worker/wrangler.jsonc` |
 | Left a test-data file in a different temp folder than the shell that used it, and re-ran a 10 MB live test three times because of wrong paths | the script failed with file-not-found | check the path before a run that spends quota |
+| A bare year in a PDF (1983) came back as 1983-01-01 and was shown as "1 stycznia 1983" | running public PDFs (IRS W-9) through the live app and comparing with the text | prompt now says a date needs day, month and year; test first |
+| Long numbers broke across lines in the summary ("184" / "500,00 PLN") | looking at the summary on a phone width | display-only non-breaking spaces; the data is not changed |
+| A rotated, degraded scan returned "Hardwave Logistics" instead of "Nordwave Logistics" | comparing the result with the source page | cannot be fixed in code; the result now carries a note when scan pages were used |
+| The model returned 17 dates although the prompt asked for at most 12 | a degraded 3-page contract scan | the sanitiser now caps amounts and dates at 15 per answer; the prompt also skips share capital and publication fees |
 | `npm install` failed with EPERM (root-owned `~/.npm`) | install output | not an AI mistake; worked around with `--cache` |
 
 ## What I understand and can explain

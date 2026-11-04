@@ -26,7 +26,8 @@ export interface Coverage {
 }
 
 export type Outcome =
-  { kind: 'result'; insight: Insight; coverage: Coverage | null } | { kind: 'empty' };
+  | { kind: 'result'; insight: Insight; coverage: Coverage | null; scanned?: true }
+  | { kind: 'empty' };
 
 /** Kept by the caller between a failed run and its retry: finished chunks and the summary are never requested again. */
 export interface RunState {
@@ -243,7 +244,11 @@ async function run(file: File, deps: PipelineDeps, options: RunOptions): Promise
   };
   const analyzedTo = analyzedUpTo(plan.chunks, count);
   const coverage = count < total ? { analyzedTo, totalPages: plan.numPages } : null;
-  return { kind: 'result', insight, coverage };
+  // Set only when scan pages were sent: text read by the model from images can contain misreadings.
+  const scanned = plan.chunks.slice(0, count).some((c) => c.images.length > 0);
+  return scanned
+    ? { kind: 'result', insight, coverage, scanned: true }
+    : { kind: 'result', insight, coverage };
 }
 
 /** file is already validated. Throws PdfError (password, corrupt) or AppError. */

@@ -123,6 +123,15 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 | Free API quota used up, rate limit, no network, timeout | separate messages, retry button |
 | Instructions hidden in the PDF text | ignored (covered by a test fixture) |
 
+## Accuracy
+
+The summary and the data come from an AI model, so check them against the document before you rely on them. Checked so far on real files: a 12-page contract (with a scanned annex), a 15-page paper, an IRS form, a Polish university document, a 14-page two-column paper, a black-and-white fax scan and three deliberately degraded scans (skewed, blurred, rotated by 90 degrees). Amounts and dates were compared with the PDF text and matched. Known weaknesses:
+
+- Text read from a scan can contain misreadings (for example a company name with one wrong letter). The result then says: "Część treści odczytano ze skanu. Sprawdź nazwy i kwoty."
+- The model may list minor figures (a page fee, share capital); the prompt tells it to skip them, but it is not guaranteed.
+- A date is kept only when day, month and year are written; a bare year is not turned into 1 January.
+- The app does not check that a value really appears in the document.
+
 ## Limits
 
 | Limit | Value | Where |
