@@ -38,7 +38,7 @@ const DEFAULT_TOTAL_BUDGET_MS = 28_000;
 const MIN_ATTEMPT_MS = 1_000;
 
 const memoryLimiter = createMemoryLimiter(10, 60_000);
-const memoryGlobalLimiter = createMemoryLimiter(120, 60_000);
+const memoryGlobalLimiter = createMemoryLimiter(60, 60_000);
 
 const STATUS: Record<ErrorCode, number> = {
   forbidden_origin: 403,
@@ -91,6 +91,7 @@ function limiterKey(ip: string | null): string {
   const [head = '', tail] = ip.split('::');
   const front = head ? head.split(':') : [];
   const back = tail ? tail.split(':') : [];
+  if (front.length + back.length > (tail === undefined ? 8 : 7)) return ip;
   const groups =
     tail === undefined
       ? front
@@ -156,7 +157,7 @@ async function generate<T>(
   let hint: string | undefined;
   for (let attempt = 0; attempt < 2; attempt += 1) {
     const remaining = clock.deadline - clock.now();
-    if (remaining < MIN_ATTEMPT_MS) throw new GeminiError('timeout');
+    if (remaining < MIN_ATTEMPT_MS) throw new GeminiError('budget');
     const text = await callGemini({
       apiKey: env.GEMINI_API_KEY ?? '',
       model,
@@ -187,13 +188,16 @@ async function runWithFallback<T>(
   ];
   let code: ErrorCode = 'upstream_error';
   let upstreamStatus: number | undefined;
+  let seen = false;
   for (const model of models) {
     try {
       const result = await generate(env, fetchImpl, model, build, validate, clock);
       return result === 'invalid' ? { code: 'invalid_response' } : { value: result };
     } catch (error) {
       if (!(error instanceof GeminiError)) throw error;
+      if (error.kind === 'budget') return seen ? { code, upstreamStatus } : { code: 'timeout' };
       if (error.kind === 'quota' || error.kind === 'overloaded') {
+        seen = true;
         code = error.kind === 'quota' ? 'quota_exceeded' : 'upstream_error';
         upstreamStatus = error.status;
         continue;

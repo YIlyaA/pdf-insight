@@ -11,10 +11,13 @@ const isGrouped = (groups: string[]): boolean =>
 export function parseAmount(text: string): number | null {
   if (text.includes('%')) return null;
   // Optional sign or opening bracket, then digits with spaces and separators; only digit-free text around it.
-  const found = /^[^\d\-\u2212(]*([-\u2212(]?)\s*(\d[\d\s.,]*)[^\d]*$/u.exec(text);
-  if (!found) return null;
+  const found = /^[^\d\-\u2212(]*?([-\u2212(]?)\s*([.,]?\d[\d\s.,]*)([^\d]*)$/u.exec(text);
+  if (!found || /[-\u2212]/u.test(found[3] ?? '')) return null;
   const negative = found[1] !== '';
-  const body = (found[2] ?? '').replace(/\s/g, '');
+  const core = found[2] ?? '';
+  const spaced = (core.split(/[.,]/u).find((part) => part.length > 0) ?? '').trim().split(/\s+/u);
+  if (spaced.length > 1 && !isGrouped(spaced)) return null;
+  const body = core.replace(/\s/g, '');
 
   const lastComma = body.lastIndexOf(',');
   const lastDot = body.lastIndexOf('.');
@@ -31,7 +34,7 @@ export function parseAmount(text: string): number | null {
     const groups = body.split(lastComma !== -1 ? ',' : '.');
     if (
       groups.some((g) => !/^\d*$/.test(g)) ||
-      groups.some((g, i) => i < groups.length - 1 && g === '')
+      groups.some((g, i) => i < groups.length - 1 && g === '' && (i > 0 || groups.length > 2))
     )
       return null;
     if (groups.length === 2) {

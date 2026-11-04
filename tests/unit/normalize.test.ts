@@ -1,5 +1,20 @@
 import { normalizeCurrency, normalizeDate, parseAmount } from '../../src/lib/normalize';
 
+describe('parseAmount leading separators and grouping', () => {
+  it.each([
+    ['.50', 0.5],
+    ['$.99', 0.99],
+    [',99 zł', 0.99],
+    ['ok. 1 000 zł', 1000],
+  ])('parses %s', (input, expected) => {
+    expect(parseAmount(input)).toBe(expected);
+  });
+
+  it.each(['50-', '1 23 45', '12 3456'])('returns null for %j', (input) => {
+    expect(parseAmount(input)).toBeNull();
+  });
+});
+
 describe('parseAmount sign and junk', () => {
   it.each([
     ['\u2212100', -100],

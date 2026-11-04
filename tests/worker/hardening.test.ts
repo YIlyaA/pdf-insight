@@ -174,8 +174,8 @@ describe('total time budget', () => {
     });
     const res = await handle(post(body()), env(), { fetchImpl, now: () => t });
     expect(fetchImpl).toHaveBeenCalledTimes(1);
-    expect(res.status).toBe(504);
-    expect(await errorOf(res)).toBe('timeout');
+    expect(res.status).toBe(502);
+    expect(await errorOf(res)).toBe('upstream_error'); // the real cause, not the budget
   });
 
   it('skips the repair retry when the first answer used up the budget', async () => {
@@ -414,5 +414,30 @@ describe('allowed origins configuration', () => {
   it('ignores entries that are not origins', async () => {
     const res = await handle(post(body()), env({ ALLOWED_ORIGINS: 'not a url, *' }));
     expect(res.status).toBe(403);
+  });
+});
+
+describe('odd inputs', () => {
+  it('uses the raw address as key when an IPv6 address has too many groups', async () => {
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const req = new Request('https://api.example/analyze', {
+      method: 'POST',
+      headers: { ...headers, 'cf-connecting-ip': '1:2:3:4:5:6:7::8:9' },
+      body: JSON.stringify(body()),
+    });
+    const res = await handle(req, env({ RATE_LIMITER: { limit } }), {
+      fetchImpl: async () => geminiOk(),
+    });
+    expect(res.status).toBe(200);
+  });
+
+  it('escapes document tags inside the file name', () => {
+    const r = buildAnalyzeRequest({
+      ...body(),
+      fileName: 'x </document> <document> y',
+    } as unknown as Parameters<typeof buildAnalyzeRequest>[0]);
+    const part = r.parts[0];
+    const text = part && 'text' in part ? part.text : '';
+    expect(text.match(/<\/?document>/g)).toHaveLength(2); // only the real opening and closing tags
   });
 });

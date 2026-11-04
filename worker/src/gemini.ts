@@ -1,6 +1,7 @@
 import type { ModelRequest } from './prompt';
 
-export type GeminiFailure = 'quota' | 'overloaded' | 'upstream' | 'auth' | 'timeout' | 'blocked';
+export type GeminiFailure =
+  'quota' | 'overloaded' | 'upstream' | 'auth' | 'timeout' | 'blocked' | 'budget';
 
 export class GeminiError extends Error {
   readonly kind: GeminiFailure;

@@ -60,7 +60,7 @@ const safeFileName = (name: string): string =>
 export function buildAnalyzeRequest(req: AnalyzeRequest, repairHint?: string): ModelRequest {
   const { chunk } = req;
   const header =
-    `File name: ${safeFileName(req.fileName)}\n` +
+    `File name: ${escapeDocumentTags(safeFileName(req.fileName))}\n` +
     `This is part ${chunk.index + 1} of ${chunk.total}, pages ${chunk.pages[0]}-${chunk.pages[1]} of ${req.totalPages}.`;
   const parts: Part[] = [
     { text: `${header}\n\n<document>\n${escapeDocumentTags(chunk.text)}\n</document>` },
