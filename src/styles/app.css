@@ -51,6 +51,31 @@ button {
   outline: none;
 }
 
+/* Visible confirmation (copy, download, cancel); also the polite live region. */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-5);
+  z-index: 10;
+  max-width: calc(100vw - 2 * var(--space-4));
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  font-size: var(--text-14);
+  transform: translateX(-50%);
+  transition:
+    opacity 150ms ease-out,
+    transform 150ms ease-out;
+}
+
+.toast:empty {
+  opacity: 0;
+  transform: translate(-50%, var(--space-2));
+  pointer-events: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

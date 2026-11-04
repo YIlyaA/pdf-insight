@@ -71,7 +71,7 @@ Edge cases: 0/1/many amounts; 60 entities; 200-character file name; missing titl
 | HistoryItem | past result | n/a | hover, focus | name truncated | button + separate delete button with `aria-label` containing file name | `--surface` |
 | PrivacyDialog | privacy details | n/a | open, closed | h2 + 4 items + "Zamknij"; fits 360 px, scrolls when taller than the viewport | native `<dialog>` with `showModal` (page inert, Esc closes); fallback when `showModal` is missing: `open` attribute + own Esc handling; accessible name from the h2; focus to "Zamknij" on open, back to the opener on close | `--surface`, `--border-strong`, `::backdrop` = `--bg` at 82 %; fade + 8 px rise (opacity/transform, off under reduced motion) |
 | Logo | brand mark left of the h1 | n/a | n/a | 32 px (40 px from 640) | inline SVG in an `aria-hidden` wrapper; the h1 text is the name; same drawing in `public/favicon.svg` | document outline `--text`, four scan-corner brackets `--accent-text` (lime in dark) |
-| Toast-free | none; status uses live regions | | | | | |
+| Toast | one visible status plate at the bottom (copy, download, cancel), also the polite live region; clears after 3 s | | | | `role="status"` | `--surface`, `--border-strong` |
 
 ## 6. Tokens
 | Token | Light | Dark | Used for |

@@ -23,6 +23,7 @@ interface ResultPanelProps {
   coverage: Coverage | null;
   /** Copies text to the clipboard and announces the outcome politely. */
   onCopy(text: string): void;
+  onNotify(text: string): void;
   onNext(): void;
   headingRef?: Ref<HTMLHeadingElement>;
 }
@@ -39,7 +40,7 @@ function factChips(doc: Insight['document']): string[] {
 }
 
 export function ResultPanel(props: ResultPanelProps) {
-  const { fileName, insight, coverage, onCopy, onNext, headingRef } = props;
+  const { fileName, insight, coverage, onCopy, onNotify, onNext, headingRef } = props;
   const headingId = useId();
   const json = useMemo(() => JSON.stringify(insight, null, 2), [insight]);
   const { title, language } = insight.document;
@@ -74,7 +75,13 @@ export function ResultPanel(props: ResultPanelProps) {
         )}
       </header>
       <div className="actions">
-        <Button variant="primary" onClick={() => downloadJson(json, downloadFileName(fileName))}>
+        <Button
+          variant="primary"
+          onClick={() => {
+            downloadJson(json, downloadFileName(fileName));
+            onNotify(COPY.downloaded);
+          }}
+        >
           {COPY.download}
         </Button>
         <Button onClick={() => onCopy(formatInsightText(insight))}>{COPY.copyText}</Button>

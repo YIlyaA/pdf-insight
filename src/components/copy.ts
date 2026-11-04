@@ -32,6 +32,7 @@ export const COPY = {
   copyText: 'Kopiuj tekst',
   copy: 'Kopiuj JSON',
   copied: 'Skopiowano',
+  downloaded: 'Plik JSON pobrany',
   copyFailed: 'Nie udało się skopiować',
   next: 'Analizuj kolejny plik',
   showAll: (n: number) => `Pokaż wszystkie (${n})`,

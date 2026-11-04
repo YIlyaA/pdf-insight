@@ -1,5 +1,5 @@
 import { MotionConfig } from 'motion/react';
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { HistoryList } from './components/HistoryList';
@@ -18,6 +18,8 @@ import type { Insight } from './lib/schema';
 import { createDefaultServices, type AppServices } from './services';
 
 export type { AppServices, RunContext } from './services';
+
+const TOAST_MS = 3000;
 
 function newId(now: number): string {
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
@@ -67,6 +69,13 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
     targets[state.focus.target].current?.focus();
   }, [state.focus]);
 
+  // The confirmation is visible for a moment, then cleared so the same text can be announced again.
+  useEffect(() => {
+    if (!state.announcement) return;
+    const timer = setTimeout(() => announce(''), TOAST_MS);
+    return () => clearTimeout(timer);
+  }, [state.announcement, announce]);
+
   const openPicker = useCallback(() => inputRef.current?.click(), []);
   const onFile = useCallback((file: File) => void selectFile(file), [selectFile]);
 
@@ -107,6 +116,7 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
             onFile={onFile}
             onOpenPicker={openPicker}
             onCopy={(text) => void copy(text)}
+            onNotify={announce}
           />
           {state.view.kind === 'idle' && history.length > 0 && (
             <HistoryList
@@ -130,7 +140,7 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
               if (file) onFile(file);
             }}
           />
-          <p className="visually-hidden" aria-live="polite">
+          <p className="toast" role="status" aria-live="polite">
             {state.announcement}
           </p>
         </main>

@@ -16,11 +16,13 @@ interface MainPanelProps {
   onFile(file: File): void;
   onOpenPicker(): void;
   onCopy(text: string): void;
+  /** Shows and announces a short confirmation (for example after a download). */
+  onNotify(text: string): void;
 }
 
 /** Exactly one panel per state; a state change fades the new panel in (150 ms, opacity/transform). */
 export function MainPanel(props: MainPanelProps) {
-  const { analysis, now, headingRef, zoneRef, onFile, onOpenPicker, onCopy } = props;
+  const { analysis, now, headingRef, zoneRef, onFile, onOpenPicker, onCopy, onNotify } = props;
   const { view, zoneError } = analysis.state;
 
   function panel() {
@@ -78,6 +80,7 @@ export function MainPanel(props: MainPanelProps) {
             coverage={view.coverage}
             headingRef={headingRef}
             onCopy={onCopy}
+            onNotify={onNotify}
             onNext={() => analysis.reset('title')}
           />
         );
