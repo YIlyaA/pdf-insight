@@ -23,6 +23,11 @@ describe('prompt', () => {
     expect(SYSTEM_PROMPT).toMatch(/nominative/i);
   });
 
+  it('keeps the answer short: only the main amounts and dates, with a cap', () => {
+    expect(SYSTEM_PROMPT).toMatch(/at most 12 amounts/i);
+    expect(SYSTEM_PROMPT).toMatch(/at most 12 dates/i);
+  });
+
   it('wraps the text in document tags and describes the chunk position', () => {
     const text = buildAnalyzeRequest(req)
       .parts.map((p) => ('text' in p ? p.text : ''))
