@@ -319,3 +319,100 @@ describe('prompt injection through metadata and markup', () => {
     expect(text).toContain(plain);
   });
 });
+
+describe('request shape beyond types', () => {
+  const run = async (payload: unknown) => {
+    const fetchImpl = vi.fn().mockImplementation(async () => geminiOk());
+    const res = await handle(post(payload), env(), { fetchImpl });
+    return { res, fetchImpl };
+  };
+  const chunk = (over: Record<string, unknown>) => ({
+    index: 0,
+    total: 1,
+    pages: [1, 4],
+    text: 'x',
+    ...over,
+  });
+
+  it.each([
+    ['index past total', body({ chunk: chunk({ index: 7 }) })],
+    ['reversed page range', body({ chunk: chunk({ pages: [3, 2] }) })],
+    ['range past the document', body({ chunk: chunk({ pages: [1, 99] }) })],
+    ['absurd chunk count', body({ chunk: chunk({ total: 100000 }) })],
+    [
+      'image page outside the chunk',
+      body({ images: [{ page: 99, mimeType: 'image/jpeg', dataBase64: JPEG }] }),
+    ],
+  ])('returns 400 for %s without calling the model', async (_n, payload) => {
+    const { res, fetchImpl } = await run(payload);
+    expect(res.status).toBe(400);
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe('stalled provider body', () => {
+  it('times out when the provider sends headers and then stops', async () => {
+    const fetchImpl = vi.fn().mockImplementation(async (_url: string, init: RequestInit) => {
+      const stream = new ReadableStream<Uint8Array>({
+        start(controller) {
+          controller.enqueue(new TextEncoder().encode('{"cand'));
+          init.signal?.addEventListener('abort', () =>
+            controller.error(new DOMException('aborted', 'AbortError')),
+          );
+        },
+      });
+      return new Response(stream, { status: 200 });
+    });
+    const started = Date.now();
+    const res = await handle(post(body()), env({ GEMINI_TIMEOUT_MS: '40' }), { fetchImpl });
+    expect(res.status).toBe(504);
+    expect(await errorOf(res)).toBe('timeout');
+    expect(Date.now() - started).toBeLessThan(1000);
+  });
+});
+
+describe('rate limit keys', () => {
+  const keyFor = async (ip: string) => {
+    const limit = vi.fn().mockResolvedValue({ success: true });
+    const req = new Request('https://api.example/analyze', {
+      method: 'POST',
+      headers: { ...headers, 'cf-connecting-ip': ip },
+      body: JSON.stringify(body()),
+    });
+    await handle(req, env({ RATE_LIMITER: { limit } }), { fetchImpl: async () => geminiOk() });
+    return (limit.mock.calls[0]?.[0] as { key: string }).key;
+  };
+
+  it('keeps IPv4 addresses as they are', async () => {
+    expect(await keyFor('203.0.113.7')).toBe('203.0.113.7');
+  });
+
+  it('shares one bucket across a whole IPv6 /64', async () => {
+    const a = await keyFor('2001:db8:1:2:aaaa:bbbb:cccc:dddd');
+    const b = await keyFor('2001:db8:1:2:1::1');
+    const c = await keyFor('2001:db8:1:3::1');
+    expect(a).toBe(b);
+    expect(a).not.toBe(c);
+  });
+
+  it('expands compressed IPv6 before cutting the prefix', async () => {
+    expect(await keyFor('2001:db8::1')).toBe(await keyFor('2001:0db8:0:0:ffff::2'));
+  });
+});
+
+describe('allowed origins configuration', () => {
+  it.each(['https://yilyaa.github.io/', 'HTTPS://YilyaA.GitHub.io', ' https://yilyaa.github.io '])(
+    'matches the real Origin when the config says %j',
+    async (configured) => {
+      const res = await handle(post(body()), env({ ALLOWED_ORIGINS: configured }), {
+        fetchImpl: async () => geminiOk(),
+      });
+      expect(res.status).toBe(200);
+    },
+  );
+
+  it('ignores entries that are not origins', async () => {
+    const res = await handle(post(body()), env({ ALLOWED_ORIGINS: 'not a url, *' }));
+    expect(res.status).toBe(403);
+  });
+});

@@ -9,11 +9,12 @@ const isGrouped = (groups: string[]): boolean =>
  * three digits ("1.234", "1,234") could be a decimal or a thousands mark, so it is rejected.
  */
 export function parseAmount(text: string): number | null {
-  const cleaned = text.replace(/[^\d.,-]/g, '');
-  if (!/\d/.test(cleaned)) return null;
-  const negative = cleaned.startsWith('-');
-  const body = cleaned.replace(/-/g, '');
-  if (cleaned.slice(1).includes('-')) return null;
+  if (text.includes('%')) return null;
+  // Optional sign or opening bracket, then digits with spaces and separators; only digit-free text around it.
+  const found = /^[^\d\-\u2212(]*([-\u2212(]?)\s*(\d[\d\s.,]*)[^\d]*$/u.exec(text);
+  if (!found) return null;
+  const negative = found[1] !== '';
+  const body = (found[2] ?? '').replace(/\s/g, '');
 
   const lastComma = body.lastIndexOf(',');
   const lastDot = body.lastIndexOf('.');
@@ -48,7 +49,7 @@ export function parseAmount(text: string): number | null {
   return negative ? -value : value;
 }
 
-const CURRENCY_ALIASES: Record<string, string> = {
+const CURRENCY_ALIASES: Readonly<Record<string, string>> = {
   zł: 'PLN',
   zl: 'PLN',
   złotych: 'PLN',
@@ -75,13 +76,13 @@ function isKnownCurrency(code: string): boolean {
 /** Maps a symbol, name or code to an ISO 4217 code, or null if unknown. */
 export function normalizeCurrency(text: string): string | null {
   const key = text.trim().toLocaleLowerCase('pl');
-  const alias = CURRENCY_ALIASES[key];
+  const alias = Object.hasOwn(CURRENCY_ALIASES, key) ? CURRENCY_ALIASES[key] : undefined;
   if (alias) return alias;
   if (/^[a-z]{3}$/.test(key) && isKnownCurrency(key.toUpperCase())) return key.toUpperCase();
   return null;
 }
 
-const MONTHS: Record<string, number> = {
+const MONTHS: Readonly<Record<string, number>> = {
   // Polish (genitive and nominative)
   stycznia: 1,
   styczeń: 1,
@@ -138,6 +139,11 @@ const MONTHS: Record<string, number> = {
   dezember: 12,
 };
 
+const monthNumber = (name: string): number | undefined => {
+  const key = name.toLocaleLowerCase('pl');
+  return Object.hasOwn(MONTHS, key) ? MONTHS[key] : undefined;
+};
+
 function toIso(year: number, month: number, day: number): string | null {
   if (month < 1 || month > 12 || day < 1) return null;
   const date = new Date(Date.UTC(year, month - 1, day));
@@ -160,12 +166,12 @@ export function normalizeDate(text: string): string | null {
   if (m) return toIso(Number(m[3]), Number(m[2]), Number(m[1]));
   m = /^(\d{1,2})\.? (\p{L}+) (\d{4})(?: ?r\.?)?$/u.exec(s);
   if (m) {
-    const month = MONTHS[(m[2] ?? '').toLocaleLowerCase('pl')];
+    const month = monthNumber(m[2] ?? '');
     return month ? toIso(Number(m[3]), month, Number(m[1])) : null;
   }
   m = /^(\p{L}+) (\d{1,2}),? (\d{4})$/u.exec(s);
   if (m) {
-    const month = MONTHS[(m[1] ?? '').toLocaleLowerCase('pl')];
+    const month = monthNumber(m[1] ?? '');
     return month ? toIso(Number(m[3]), month, Number(m[2])) : null;
   }
   return null;

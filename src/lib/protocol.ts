@@ -74,14 +74,25 @@ export const AnalyzeRequestSchema = z
     totalPages: z.number().int().min(1).max(5000),
     chunk: z.object({
       index: z.number().int().min(0),
-      total: z.number().int().min(1),
+      total: z.number().int().min(1).max(5000),
       pages: z.tuple([z.number().int().min(1), z.number().int().min(1)]),
       text: z.string().max(MAX_CHUNK_CHARS),
     }),
     images: z.array(ImageSchema).max(MAX_IMAGES_PER_REQUEST).default([]),
   })
-  .refine((r) => r.chunk.text.trim().length > 0 || r.images.length > 0, {
-    message: 'Either text or images are required',
+  .superRefine((r, ctx) => {
+    const [first, last] = r.chunk.pages;
+    if (r.chunk.text.trim().length === 0 && r.images.length === 0)
+      ctx.addIssue({ code: 'custom', message: 'Either text or images are required' });
+    if (r.chunk.index >= r.chunk.total)
+      ctx.addIssue({ code: 'custom', message: 'chunk.index must be below chunk.total' });
+    if (first > last || last > r.totalPages)
+      ctx.addIssue({
+        code: 'custom',
+        message: 'chunk.pages must be an ordered range inside the document',
+      });
+    if (r.images.some((image) => image.page < first || image.page > last))
+      ctx.addIssue({ code: 'custom', message: 'image.page must lie inside chunk.pages' });
   });
 export type AnalyzeRequest = z.infer<typeof AnalyzeRequestSchema>;
 

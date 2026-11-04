@@ -1,5 +1,38 @@
 import { normalizeCurrency, normalizeDate, parseAmount } from '../../src/lib/normalize';
 
+describe('parseAmount sign and junk', () => {
+  it.each([
+    ['\u2212100', -100],
+    ['(100)', -100],
+    ['(1 250,50)', -1250.5],
+    ['-100 zł', -100],
+    ['zł 100,50', 100.5],
+  ])('parses %s', (input, expected) => {
+    expect(parseAmount(input)).toBe(expected);
+  });
+
+  it.each(['1e5', '5%', '12abc34', '12 %', '1-2', 'about 3 to 4 million', '100.'])(
+    'returns null for %j',
+    (input) => {
+      expect(parseAmount(input)).toBeNull();
+    },
+  );
+});
+
+describe('lookups ignore inherited object properties', () => {
+  it.each(['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf'])(
+    'normalizeCurrency(%s) is null',
+    (input) => {
+      expect(normalizeCurrency(input)).toBeNull();
+    },
+  );
+
+  it.each(['constructor', '__proto__', 'toString'])('normalizeDate with month %s is null', (m) => {
+    expect(normalizeDate(`12 ${m} 2026`)).toBeNull();
+    expect(normalizeDate(`${m} 12, 2026`)).toBeNull();
+  });
+});
+
 describe('parseAmount', () => {
   it.each([
     ['12 300,00', 12300],

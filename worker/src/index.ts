@@ -72,11 +72,33 @@ const MESSAGES: Record<ErrorCode, string> = {
   internal_error: 'Internal error',
 };
 
+/** Configured origins in the exact form browsers send (lowercase host, no path or trailing slash). */
 function allowedOrigins(env: Env): string[] {
-  return (env.ALLOWED_ORIGINS ?? '')
-    .split(',')
-    .map((o) => o.trim())
-    .filter(Boolean);
+  return (env.ALLOWED_ORIGINS ?? '').split(',').flatMap((entry) => {
+    try {
+      const url = new URL(entry.trim());
+      return url.protocol === 'https:' || url.protocol === 'http:' ? [url.origin] : [];
+    } catch {
+      return [];
+    }
+  });
+}
+
+/** Rate-limit key: IPv4 as is; IPv6 reduced to its /64 so one client cannot rotate through a whole block. */
+function limiterKey(ip: string | null): string {
+  if (!ip) return 'unknown';
+  if (!ip.includes(':') || ip.includes('.')) return ip;
+  const [head = '', tail] = ip.split('::');
+  const front = head ? head.split(':') : [];
+  const back = tail ? tail.split(':') : [];
+  const groups =
+    tail === undefined
+      ? front
+      : [...front, ...Array<string>(8 - front.length - back.length).fill('0'), ...back];
+  return `v6:${groups
+    .slice(0, 4)
+    .map((g) => g.toLowerCase().replace(/^0+(?=.)/, ''))
+    .join(':')}`;
 }
 
 function json(body: unknown, status: number, headers: Record<string, string>): Response {
@@ -269,7 +291,7 @@ async function route(
     return fail('payload_too_large', cors);
   if (!env.GEMINI_API_KEY) return fail('misconfigured', cors);
 
-  const ip = request.headers.get('cf-connecting-ip') ?? 'unknown';
+  const ip = limiterKey(request.headers.get('cf-connecting-ip'));
   if (!(await allow(env.RATE_LIMITER, memoryLimiter, ip)))
     return fail('rate_limited', cors, { 'retry-after': '60' });
   if (!(await allow(env.GLOBAL_LIMITER, memoryGlobalLimiter, 'global')))
