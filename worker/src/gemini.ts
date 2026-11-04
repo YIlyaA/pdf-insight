@@ -1,13 +1,16 @@
 import type { ModelRequest } from './prompt';
 
-export type GeminiFailure = 'quota' | 'upstream' | 'auth' | 'timeout' | 'blocked';
+export type GeminiFailure = 'quota' | 'overloaded' | 'upstream' | 'auth' | 'timeout' | 'blocked';
 
 export class GeminiError extends Error {
   readonly kind: GeminiFailure;
-  constructor(kind: GeminiFailure) {
+  /** HTTP status returned by the provider, when there was a response. Never the message. */
+  readonly status: number | undefined;
+  constructor(kind: GeminiFailure, status?: number) {
     super(`Gemini call failed: ${kind}`);
     this.name = 'GeminiError';
     this.kind = kind;
+    this.status = status;
   }
 }
 
@@ -65,11 +68,15 @@ export async function callGemini(options: CallOptions): Promise<string | null> {
 
   if (!response.ok) {
     if (response.status === 429 || data.error?.status === 'RESOURCE_EXHAUSTED')
-      throw new GeminiError('quota');
-    if (response.status === 401 || response.status === 403) throw new GeminiError('auth');
+      throw new GeminiError('quota', response.status);
+    if (response.status === 503 || data.error?.status === 'UNAVAILABLE') {
+      throw new GeminiError('overloaded', response.status);
+    }
+    if (response.status === 401 || response.status === 403)
+      throw new GeminiError('auth', response.status);
     if (response.status === 400 && /api key/i.test(data.error?.message ?? ''))
-      throw new GeminiError('auth');
-    throw new GeminiError('upstream');
+      throw new GeminiError('auth', response.status);
+    throw new GeminiError('upstream', response.status);
   }
 
   if (data.promptFeedback?.blockReason) throw new GeminiError('blocked');

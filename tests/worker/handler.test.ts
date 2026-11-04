@@ -295,6 +295,24 @@ describe('analyze', () => {
     expect((fetchImpl.mock.calls[1] as [string])[0]).toContain('fallback-model');
   });
 
+  it('falls back to the second model when the first is overloaded (503)', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockImplementationOnce(() => geminiStatus(503, 'UNAVAILABLE'))
+      .mockImplementationOnce(() => geminiOk(validModelOutput));
+    const res = await handle(post(body()), env(), { fetchImpl });
+    expect(res.status).toBe(200);
+    expect((fetchImpl.mock.calls[1] as [string])[0]).toContain('fallback-model');
+  });
+
+  it('returns upstream_error with the status when every model is overloaded', async () => {
+    const fetchImpl = vi.fn().mockImplementation(() => geminiStatus(503, 'UNAVAILABLE'));
+    const res = await handle(post(body()), env(), { fetchImpl });
+    expect(await errorOf(res)).toBe('upstream_error');
+    expect(res.headers.get('x-upstream-status')).toBe('503');
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   it('returns quota_exceeded when every model is out of quota', async () => {
     const fetchImpl = vi.fn().mockImplementation(() => geminiStatus(429, 'RESOURCE_EXHAUSTED'));
     const res = await handle(post(body()), env(), { fetchImpl });
@@ -309,6 +327,15 @@ describe('analyze', () => {
     });
     expect(res.status).toBe(502);
     expect(await errorOf(res)).toBe('upstream_error');
+  });
+
+  it('exposes only the numeric provider status in a header for diagnostics', async () => {
+    const res = await handle(post(body()), env(), {
+      fetchImpl: vi.fn().mockImplementation(() => geminiStatus(404, 'NOT_FOUND')),
+    });
+    expect(await errorOf(res)).toBe('upstream_error');
+    expect(res.headers.get('x-upstream-status')).toBe('404');
+    expect(res.headers.get('access-control-expose-headers')).toMatch(/x-upstream-status/i);
   });
 
   it('returns misconfigured when the provider rejects the key', async () => {
