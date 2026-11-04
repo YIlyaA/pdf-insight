@@ -1,5 +1,6 @@
 import { useId, useState, type ReactNode } from 'react';
 import { COLLAPSE_AFTER, COPY } from './copy';
+import { keepNumbersTogether } from '../lib/format';
 import { Icon } from './Icon';
 
 interface ResultSectionProps {
@@ -62,7 +63,7 @@ export function TextList({ items, lang, variant = 'bullets' }: TextListProps) {
     <>
       <ul id={listId} className={`text-list text-list-${variant}`} lang={lang} dir="auto">
         {visible.map((item, index) => (
-          <li key={index}>{item}</li>
+          <li key={index}>{keepNumbersTogether(item)}</li>
         ))}
       </ul>
       {toggle}

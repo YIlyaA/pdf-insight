@@ -1,4 +1,11 @@
-import { docTypeLabel, formatAmount, formatDate, languageName, pagesLabel } from '../lib/format';
+import {
+  docTypeLabel,
+  formatAmount,
+  formatDate,
+  keepNumbersTogether,
+  languageName,
+  pagesLabel,
+} from '../lib/format';
 import type { Insight } from '../lib/schema';
 import { COPY } from './copy';
 import { FactsTable, type FactRow } from './FactsTable';
@@ -50,7 +57,7 @@ export function InsightView({ insight }: { insight: Insight }) {
       <div className="result-column">
         <ResultSection title={COPY.sections.summary} className="result-section-lead">
           <p className="summary" lang={lang} dir="auto">
-            {insight.summary}
+            {keepNumbersTogether(insight.summary)}
           </p>
         </ResultSection>
         <ResultSection title={COPY.sections.keyPoints}>
