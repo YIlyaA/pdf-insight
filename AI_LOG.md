@@ -60,6 +60,7 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | Merged key points and keywords by joining the lists and cutting at 7 and 15, so in a long document everything came from the first chunk | independent audit by a fresh reviewer agent (no conclusions in its prompt) | lists are interleaved across chunks before the cut; test first (red, then green) |
 | The quota error said "Limit darmowego API" and "Dzienny limit" after the project moved to a paid key with a monthly cap | owner question about what users are told when limits hit | text now "Limit usługi wyczerpany / Analiza jest chwilowo niedostępna"; two independent tests updated by the owner's decision |
 | Amounts came in document order, so the total (184 500 zł) hid behind "show all" while share capital came first | live contract run through the UI | prompt asks for the most important first; effect on the live model is checked after the Worker is deployed |
+| My date check (`groundDates`) accepted the invented 2024-03-01 on the live W-9: the search window cut "10231X" to "1", and that counted as day 1 | rerunning the W-9 on the deployed Worker and replaying the text the way the app extracts it | numbers cut by the window edge are ignored, window sized for the longest Polish month; test first (red, then green) |
 | `npm install` failed with EPERM (root-owned `~/.npm`) | install output | not an AI mistake; worked around with `--cache` |
 
 ## What I understand and can explain
