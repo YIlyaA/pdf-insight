@@ -265,8 +265,8 @@ describe('error panel', () => {
     ['rate_limited', 'Za dużo zapytań', 'Spróbuj ponownie za minutę.', true],
     [
       'quota_exceeded',
-      'Limit darmowego API wyczerpany',
-      'Dzienny limit analiz został wykorzystany. Wróć później.',
+      'Limit usługi wyczerpany',
+      'Analiza jest chwilowo niedostępna. Wróć później.',
       false,
     ],
     ['upstream_error', 'Usługa AI jest przeciążona', 'Spróbuj ponownie za chwilę.', true],
