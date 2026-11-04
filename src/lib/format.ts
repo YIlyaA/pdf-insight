@@ -1,4 +1,4 @@
-import type { DocType } from './schema';
+import type { DocType, Insight } from './schema';
 
 const LOCALE = 'pl-PL';
 
@@ -32,15 +32,21 @@ export function formatDate(iso: string): string {
   return dateFormat.format(date);
 }
 
+// pl-PL leaves 4-digit numbers ungrouped ("1234,50"); 'always' gives "1 234,50" so amounts line up.
 const plainAmount = new Intl.NumberFormat(LOCALE, {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
+  useGrouping: 'always',
 });
 
-/** Currency amount in pl-PL; a code Intl rejects falls back to "1234,50 XYZ". */
+/** Currency amount in pl-PL with thousands always grouped; an unknown code falls back to "1 234,50 XYZ". */
 export function formatAmount(value: number, currency: string): string {
   try {
-    return new Intl.NumberFormat(LOCALE, { style: 'currency', currency }).format(value);
+    return new Intl.NumberFormat(LOCALE, {
+      style: 'currency',
+      currency,
+      useGrouping: 'always',
+    }).format(value);
   } catch {
     return `${plainAmount.format(value)} ${currency}`;
   }
@@ -92,4 +98,68 @@ export function formatFileSize(bytes: number): string {
   if (bytes >= MB) return `${sizeFormat.format(bytes / MB)} MB`;
   if (bytes >= KB) return `${Math.round(bytes / KB)} KB`;
   return `${bytes} B`;
+}
+
+const TEXT_LABELS = {
+  summary: 'Podsumowanie',
+  keyPoints: 'Najważniejsze punkty',
+  entities: 'Podmioty',
+  organizations: 'Organizacje',
+  people: 'Osoby',
+  amounts: 'Kwoty',
+  dates: 'Daty',
+  keywords: 'Słowa kluczowe',
+} as const;
+
+/** "type · language · pages · date" for the result header and the copied text; null parts are left out. */
+export function factParts(document: Insight['document']): string[] {
+  const parts = [
+    docTypeLabel(document.type),
+    languageName(document.language),
+    pagesLabel(document.pages),
+    document.date ? formatDate(document.date) : null,
+  ];
+  return parts.filter((part): part is string => Boolean(part));
+}
+
+function withContext(value: string, context: string): string {
+  return context ? `- ${value} — ${context}` : `- ${value}`;
+}
+
+/**
+ * Plain-text version of an insight for "Kopiuj tekst": no HTML, no Markdown links, empty sections
+ * omitted, one blank line between sections, no trailing newline.
+ */
+export function formatInsightText(insight: Insight): string {
+  const { document, entities } = insight;
+  const blocks: string[][] = [
+    [document.title ?? document.fileName, factParts(document).join(' · ')],
+    [TEXT_LABELS.summary, insight.summary],
+  ];
+  if (insight.keyPoints.length > 0) {
+    blocks.push([TEXT_LABELS.keyPoints, ...insight.keyPoints.map((point) => `- ${point}`)]);
+  }
+  const entityLines = [
+    entities.organizations.length > 0
+      ? `${TEXT_LABELS.organizations}: ${entities.organizations.join(', ')}`
+      : null,
+    entities.people.length > 0 ? `${TEXT_LABELS.people}: ${entities.people.join(', ')}` : null,
+  ].filter((line): line is string => line !== null);
+  if (entityLines.length > 0) blocks.push([TEXT_LABELS.entities, ...entityLines]);
+  if (insight.amounts.length > 0) {
+    blocks.push([
+      TEXT_LABELS.amounts,
+      ...insight.amounts.map((a) => withContext(formatAmount(a.value, a.currency), a.context)),
+    ]);
+  }
+  if (insight.dates.length > 0) {
+    blocks.push([
+      TEXT_LABELS.dates,
+      ...insight.dates.map((d) => withContext(formatDate(d.date), d.context)),
+    ]);
+  }
+  if (insight.keywords.length > 0) {
+    blocks.push([`${TEXT_LABELS.keywords}: ${insight.keywords.join(', ')}`]);
+  }
+  return blocks.map((lines) => lines.join('\n')).join('\n\n');
 }

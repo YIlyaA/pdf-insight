@@ -28,7 +28,8 @@ function documentRows(insight: Insight): FactRow[] {
       valueLang: doc.title ? doc.language : undefined,
     },
     { key: 'date', label: COPY.fields.date, value: doc.date ? formatDate(doc.date) : COPY.noData },
-    { key: 'pages', label: COPY.fields.pages, value: pagesLabel(doc.pages), numeric: true },
+    // Not numeric: every Dokument value is left-aligned, like the label/value rows above it.
+    { key: 'pages', label: COPY.fields.pages, value: pagesLabel(doc.pages) },
   ];
 }
 
@@ -47,7 +48,7 @@ export function InsightView({ insight }: { insight: Insight }) {
   return (
     <div className="result-grid">
       <div className="result-column">
-        <ResultSection title={COPY.sections.summary}>
+        <ResultSection title={COPY.sections.summary} className="result-section-lead">
           <p className="summary" lang={lang} dir="auto">
             {insight.summary}
           </p>

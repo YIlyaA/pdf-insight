@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Own design, same drawing as src/components/Logo.tsx: a document inside four scan-corner brackets. -->
+  <rect width="32" height="32" rx="7" fill="#0e0f0e" stroke="none" />
+  <path d="M5 10V5h5M22 5h5v5M27 22v5h-5M10 27H5v-5" stroke="#c6f432" />
+  <path d="M11 8.5h6.5l4 4v11H11z" stroke="#ecefea" />
+  <path d="M17.5 8.5v4h4" stroke="#ecefea" />
+  <path d="M14 16.5h4.5M14 19.5h4.5" stroke="#ecefea" />
+</svg>

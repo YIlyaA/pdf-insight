@@ -2,10 +2,19 @@ import { useId, useState, type ReactNode } from 'react';
 import { COLLAPSE_AFTER, COPY } from './copy';
 import { Icon } from './Icon';
 
-export function ResultSection({ title, children }: { title: string; children: ReactNode }) {
+interface ResultSectionProps {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}
+
+export function ResultSection({ title, children, className }: ResultSectionProps) {
   const id = useId();
   return (
-    <section className="result-section" aria-labelledby={id}>
+    <section
+      className={['result-section', className].filter(Boolean).join(' ')}
+      aria-labelledby={id}
+    >
       <h3 id={id} className="result-section-title">
         {title}
       </h3>

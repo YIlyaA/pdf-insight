@@ -6,8 +6,17 @@ export const COPY = {
   dropHint: 'lub wybierz go z dysku. Tylko PDF, maks. 10 MB.',
   dropButton: 'Wybierz plik',
   dragOver: 'Upuść plik, aby rozpocząć',
-  privacy:
-    'Treść pliku zostanie wysłana do Google Gemini w celu analizy. Dostawca może ją przechowywać zgodnie z własnymi zasadami. Wynik zapisujemy tylko w tej przeglądarce. Nie wgrywaj dokumentów, których nie możesz udostępniać.',
+  privacyNotice: 'Plik zostanie wysłany do Google Gemini.',
+  privacyMore: 'Szczegóły',
+  privacyOpen: 'Prywatność',
+  privacyTitle: 'Prywatność i dane',
+  privacyItems: [
+    'Treść pliku (tekst albo obrazy stron) jest wysyłana do Google Gemini przez nasz serwer pośredniczący, żeby wykonać analizę.',
+    'Dostawca może ją przechowywać zgodnie z własnymi zasadami.',
+    'Wynik zapisujemy tylko w tej przeglądarce: do 10 analiz przez 30 dni. Możesz je usunąć w historii.',
+    'Nie wgrywaj dokumentów, których nie możesz udostępniać.',
+  ] as const,
+  close: 'Zamknij',
   steps: ['Wczytywanie pliku', 'Odczyt tekstu', 'Analiza AI', 'Gotowe'] as const,
   scanStep: (page: number, total: number) => `Skany: strona ${page} z ${total}`,
   slow: 'To trwa dłużej niż zwykle. Nadal pracujemy.',
@@ -22,6 +31,7 @@ export const COPY = {
   tabPreview: 'Podgląd',
   tabJson: 'JSON',
   download: 'Pobierz JSON',
+  copyText: 'Kopiuj tekst',
   copy: 'Kopiuj JSON',
   copied: 'Skopiowano',
   copyFailed: 'Nie udało się skopiować',
@@ -47,7 +57,8 @@ export const COPY = {
   // Not in the spec copy table: sub-labels inside "Podmioty" (open question).
   organizations: 'Organizacje',
   people: 'Osoby',
-  providerNote: 'Dane przetwarzane przez Google Gemini',
+  // Result header chip: "język angielski" reads as a fact on its own, without a field label.
+  languageChip: (name: string) => `język ${name}`,
   repoUrl: 'https://github.com/YIlyaA/pdf-insight',
   repoLabel: 'github.com/YIlyaA/pdf-insight',
 } as const;

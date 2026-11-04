@@ -4,6 +4,7 @@ import { Footer } from './components/Footer';
 import { Header } from './components/Header';
 import { HistoryList } from './components/HistoryList';
 import { MainPanel } from './components/MainPanel';
+import { PrivacyDialog } from './components/PrivacyDialog';
 import { COPY } from './components/copy';
 import { useAnalysis } from './hooks/useAnalysis';
 import {
@@ -46,6 +47,18 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
   const zoneRef = useRef<HTMLDivElement>(null);
   const historyHeadingRef = useRef<HTMLHeadingElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const privacyOpener = useRef<HTMLElement | null>(null);
+  const [privacyOpen, setPrivacyOpen] = useState(false);
+
+  const openPrivacy = useCallback((opener: HTMLElement) => {
+    privacyOpener.current = opener;
+    setPrivacyOpen(true);
+  }, []);
+
+  const closePrivacy = useCallback(() => {
+    setPrivacyOpen(false);
+    privacyOpener.current?.focus();
+  }, []);
 
   // Move focus after a state change, once the new panel is in the DOM.
   useLayoutEffect(() => {
@@ -58,9 +71,9 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
   const onFile = useCallback((file: File) => void selectFile(file), [selectFile]);
 
   const copy = useCallback(
-    async (json: string) => {
+    async (text: string) => {
       try {
-        await services.writeClipboard(json);
+        await services.writeClipboard(text);
         announce(COPY.copied);
       } catch {
         announce(COPY.copyFailed);
@@ -93,7 +106,8 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
             zoneRef={zoneRef}
             onFile={onFile}
             onOpenPicker={openPicker}
-            onCopy={(json) => void copy(json)}
+            onPrivacy={openPrivacy}
+            onCopy={(text) => void copy(text)}
           />
           {state.view.kind === 'idle' && history.length > 0 && (
             <HistoryList
@@ -121,7 +135,8 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
             {state.announcement}
           </p>
         </main>
-        <Footer />
+        <Footer onPrivacy={openPrivacy} />
+        <PrivacyDialog open={privacyOpen} onClose={closePrivacy} />
       </div>
     </MotionConfig>
   );

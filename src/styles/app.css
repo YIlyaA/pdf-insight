@@ -88,6 +88,32 @@ button {
   padding-top: var(--space-6);
 }
 
+.brand {
+  display: flex;
+  gap: var(--space-3);
+  align-items: center;
+  min-width: 0;
+}
+
+.logo {
+  display: inline-flex;
+  flex: none;
+}
+
+.logo svg {
+  width: 32px;
+  height: 32px;
+}
+
+/* The mark may use the accent: lime in dark, the dark-green accent text colour in light. */
+.logo-corners {
+  stroke: var(--accent-text);
+}
+
+.logo-doc {
+  stroke: var(--text);
+}
+
 .site-title {
   font-size: var(--text-24);
   font-weight: var(--weight-bold);
@@ -118,6 +144,7 @@ button {
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-2) var(--space-5);
+  align-items: center;
   justify-content: space-between;
   padding: var(--space-5) 0 var(--space-6);
   border-top: var(--line) solid var(--border);
@@ -130,6 +157,23 @@ button {
   font-family: var(--font-mono);
   font-weight: var(--weight-mono);
   text-underline-offset: 3px;
+}
+
+/* A text-sized button (Szczegóły, Prywatność): underlined like a link, 24 px tall hit area. */
+.link-button {
+  min-height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+
+.link-button:hover {
+  text-decoration-thickness: var(--line-strong);
 }
 
 /* Buttons */
@@ -218,15 +262,13 @@ button {
 
 .upload {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-3);
 }
 
-.privacy {
-  max-width: var(--measure);
-  padding-left: var(--space-3);
-  border-left: var(--line-strong) solid var(--border-strong);
+.notice {
   color: var(--muted);
   font-size: var(--text-14);
+  text-align: center;
 }
 
 .dropzone-block {
@@ -234,6 +276,7 @@ button {
   gap: var(--space-2);
 }
 
+/* Idle: a tall, centred target with one primary button. */
 .dropzone {
   --mark: var(--text);
   --mark-length: 18px;
@@ -241,11 +284,14 @@ button {
   position: relative;
   display: grid;
   gap: var(--space-4);
-  justify-items: start;
-  padding: var(--space-6) var(--space-5);
+  justify-items: center;
+  align-content: center;
+  min-height: 260px;
+  padding: var(--space-7) var(--space-5);
   border: var(--line) solid var(--border-strong);
   border-radius: var(--radius-control);
   background: var(--surface);
+  text-align: center;
   cursor: pointer;
   transition:
     background-color var(--duration-state) var(--ease-out),
@@ -287,8 +333,8 @@ button {
 }
 
 .dropzone-icon {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   color: var(--muted);
 }
 
@@ -308,12 +354,16 @@ button {
 }
 
 .dropzone-cta {
-  justify-self: stretch;
+  margin-top: var(--space-2);
   pointer-events: none;
 }
 
+/* Compact (under the progress panel): a low row, left-aligned, no icon, no lime. */
 .dropzone-block-compact .dropzone {
+  justify-items: stretch;
+  min-height: 0;
   padding: var(--space-4);
+  text-align: left;
 }
 
 .dropzone-block-compact .dropzone-icon {
@@ -322,6 +372,17 @@ button {
 
 .dropzone-block-compact .dropzone-title {
   font-size: var(--text-16);
+}
+
+.dropzone-block-compact .dropzone-cta {
+  margin-top: 0;
+}
+
+/* Dark theme only: a very faint lime glow behind the idle zone (no other gradients or glows). */
+@media (prefers-color-scheme: dark) {
+  .dropzone-block:not(.dropzone-block-compact) .dropzone:not([data-invalid]) {
+    box-shadow: 0 0 80px 4px color-mix(in srgb, var(--accent) 9%, transparent);
+  }
 }
 
 .field-error {
@@ -492,8 +553,35 @@ button {
 
 .result-head {
   display: grid;
-  gap: var(--space-4);
+  gap: var(--space-2);
   min-width: 0;
+}
+
+.result-title {
+  overflow-wrap: anywhere;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  padding: 2px var(--space-2);
+  border: var(--line) solid var(--border);
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-12);
+  font-weight: var(--weight-mono);
+  line-height: var(--leading-body);
+}
+
+.result-head .coverage {
+  margin-top: var(--space-2);
 }
 
 .coverage {
@@ -568,13 +656,14 @@ button {
   min-width: 0;
 }
 
+/* Quiet labels: small muted mono, no rule; the content carries the weight. */
 .result-section-title {
-  padding-bottom: var(--space-2);
-  border-bottom: var(--line) solid var(--border);
   color: var(--muted);
   font-family: var(--font-mono);
-  font-size: var(--text-14);
+  font-size: var(--text-12);
   font-weight: var(--weight-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .result-subtitle {
@@ -776,6 +865,71 @@ button {
   font-weight: var(--weight-mono);
 }
 
+/* Privacy dialog: native modal; the fallback (no showModal) is positioned the same way. */
+
+.dialog {
+  width: min(calc(100% - 2 * var(--space-4)), 480px);
+  max-width: none;
+  max-height: calc(100dvh - 2 * var(--space-4));
+  margin: auto;
+  padding: var(--space-5);
+  overflow-y: auto;
+  border: var(--line) solid var(--border-strong);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.dialog[open] {
+  display: grid;
+  gap: var(--space-4);
+  animation: dialog-in var(--duration-state) var(--ease-out);
+}
+
+/* Older engines do not inherit custom properties into ::backdrop, hence the literal fallback. */
+.dialog::backdrop {
+  background: color-mix(in srgb, var(--bg, #0e0f0e) 82%, transparent);
+}
+
+.dialog[data-fallback] {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--bg) 82%, transparent);
+}
+
+.dialog-title {
+  font-size: var(--text-20);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-heading);
+}
+
+.dialog-list {
+  display: grid;
+  gap: var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.dialog-list li::marker {
+  color: var(--muted);
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.dialog-actions > .btn {
+  width: 100%;
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
 /* 640+: inline buttons, real two-column tables, roomier gutters. */
 @media (min-width: 640px) {
   .app {
@@ -791,6 +945,15 @@ button {
     font-size: var(--text-32);
   }
 
+  .logo svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .dialog-actions > .btn {
+    width: auto;
+  }
+
   .actions {
     flex-direction: row;
     flex-wrap: wrap;
@@ -799,10 +962,6 @@ button {
 
   .actions > .btn {
     width: auto;
-  }
-
-  .dropzone-cta {
-    justify-self: end;
   }
 
   .panel {
@@ -814,13 +973,14 @@ button {
   }
 
   .dropzone {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    align-items: center;
+    min-height: 300px;
     padding: var(--space-7) var(--space-6);
   }
 
   .dropzone-block-compact .dropzone {
     grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 0;
     padding: var(--space-4) var(--space-5);
   }
 
