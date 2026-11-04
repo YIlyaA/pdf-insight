@@ -223,16 +223,18 @@ describe('request cap', () => {
 });
 
 describe('scan pages', () => {
-  it('batches scan pages by 8 as chunks with empty text and images', async () => {
+  it('batches scan pages by 4 as chunks with empty text and images', async () => {
     const fake = fakeClient();
     const rf = fakeRenderer();
     const { outcome } = await run(fakePdfJs(Array.from({ length: 10 }, () => SCAN)), fake, rf);
-    const [a, b] = fake.analyzeCalls.map((c) => c.request);
-    expect(fake.analyzeCalls).toHaveLength(2);
-    expect(a?.chunk).toMatchObject({ index: 0, total: 2, pages: [1, 8], text: '' });
-    expect(a?.images.map((i) => i.page)).toEqual([1, 2, 3, 4, 5, 6, 7, 8]);
-    expect(b?.chunk).toMatchObject({ index: 1, total: 2, pages: [9, 10], text: '' });
-    expect(b?.images.map((i) => i.page)).toEqual([9, 10]);
+    const [a, b, c] = fake.analyzeCalls.map((x) => x.request);
+    expect(fake.analyzeCalls).toHaveLength(3);
+    expect(a?.chunk).toMatchObject({ index: 0, total: 3, pages: [1, 4], text: '' });
+    expect(a?.images.map((i) => i.page)).toEqual([1, 2, 3, 4]);
+    expect(b?.chunk).toMatchObject({ index: 1, total: 3, pages: [5, 8], text: '' });
+    expect(b?.images.map((i) => i.page)).toEqual([5, 6, 7, 8]);
+    expect(c?.chunk).toMatchObject({ index: 2, total: 3, pages: [9, 10], text: '' });
+    expect(c?.images.map((i) => i.page)).toEqual([9, 10]);
     expect(a?.totalPages).toBe(10);
     expect(fake.summarizeCalls).toHaveLength(1);
     expect(insightOf(outcome).document.pages).toBe(10);
