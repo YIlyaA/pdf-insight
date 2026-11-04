@@ -95,8 +95,8 @@ describe('sanitizeModelOutput', () => {
     expect(run({ document: { ...base().document, language: 'PL' } }).document.language).toBe('pl');
   });
 
-  it('keeps extra fields', () => {
-    expect((run({ extra: 5 }) as unknown as Record<string, unknown>)['extra']).toBe(5);
+  it('drops fields the model added: output is an allowlist (see sanitize-hardening tests)', () => {
+    expect((run({ extra: 5 }) as unknown as Record<string, unknown>)['extra']).toBeUndefined();
   });
 
   it('passes non-objects through so that validation reports them', () => {

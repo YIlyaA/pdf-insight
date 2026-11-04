@@ -99,7 +99,9 @@ Environment variables:
 ## Security
 
 - The API key lives only in Worker secrets. It is not in the frontend or in the Git history.
-- CORS is limited to the demo domain. File size and request rate are limited.
+- CORS is limited to the demo domain. This stops other websites in a browser, not scripts: anyone can send a fake `Origin` with `curl`. The real protection of the free quota is the limits: per client (IPv6 counted by /64), one global bucket for all clients, a hard byte cap on the request body (read as a stream), image checks (valid base64, type matches the file header) and a 28 s time budget per request.
+- Model output is untrusted too: only known fields are kept, strings and lists are cut to fixed sizes, amounts that cannot be read without guessing (`1.234`) are dropped.
+- Prompt-injection defences: the document sits in a tagged block, look-alike closing tags (zero-width, fullwidth, other case) are broken, the file name is reduced to one clean line, and the answer is checked against the schema. The model is not given any tool or secret to leak.
 - PDF content is data, not instructions. No `dangerouslySetInnerHTML`; results are rendered as text.
 - The user is told that the file content is sent to an external AI API. Do not upload confidential documents.
 
@@ -120,6 +122,9 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 - The free API quota is shared by all demo users. When it runs out, analysis is temporarily unavailable.
 - Very long documents may exceed the time limit.
 - Scan recognition quality depends on the AI model.
+- The Worker cannot tell a real visitor from a script. A determined person can still use the global limit up for a few minutes at a time; a captcha (Cloudflare Turnstile) would close this and is not built.
+- A document with a hidden instruction can still make the model write a wrong summary of that document. It cannot change the data shape, other users' results or the app.
+- Amounts written like `1.234` or `1,234` are left out because they could mean 1.234 or 1234.
 
 ## Working with AI
 

@@ -56,6 +56,14 @@ describe('validateFile', () => {
 });
 
 describe('extractPages', () => {
+  it('opens documents with eval-based font code disabled', async () => {
+    const getDocument = vi.fn((source: Parameters<typeof pdfjs.getDocument>[0]) =>
+      pdfjs.getDocument(source),
+    );
+    await extractPages({ getDocument }, gen('tiny-1page-pl.pdf'));
+    expect(getDocument).toHaveBeenCalledWith(expect.objectContaining({ isEvalSupported: false }));
+  });
+
   it('flags every page of a scan-only PDF', async () => {
     const r = await extractPages(pdfjs, gen('scan-only.pdf'));
     expect(r.numPages).toBe(2);

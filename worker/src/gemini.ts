@@ -1,6 +1,7 @@
 import type { ModelRequest } from './prompt';
 
-export type GeminiFailure = 'quota' | 'overloaded' | 'upstream' | 'auth' | 'timeout' | 'blocked';
+export type GeminiFailure =
+  'quota' | 'overloaded' | 'upstream' | 'auth' | 'timeout' | 'blocked' | 'budget';
 
 export class GeminiError extends Error {
   readonly kind: GeminiFailure;
@@ -35,7 +36,11 @@ export async function callGemini(options: CallOptions): Promise<string | null> {
   const { apiKey, model, request, timeoutMs, fetchImpl } = options;
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
+  const isAbort = (error: unknown) => error instanceof Error && error.name === 'AbortError';
   let response: Response;
+  let data: GeminiResponse = {};
+  // The timer covers the whole exchange, including reading the body: a provider that sends
+  // headers and then stalls must not hang the request.
   try {
     response = await fetchImpl(
       `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`,
@@ -50,20 +55,17 @@ export async function callGemini(options: CallOptions): Promise<string | null> {
         signal: controller.signal,
       },
     );
+    try {
+      data = (await response.json()) as GeminiResponse;
+    } catch (error) {
+      if (isAbort(error)) throw error;
+      if (response.ok) throw new GeminiError('upstream');
+    }
   } catch (error) {
-    throw new GeminiError(
-      error instanceof Error && error.name === 'AbortError' ? 'timeout' : 'upstream',
-    );
+    if (error instanceof GeminiError) throw error;
+    throw new GeminiError(isAbort(error) ? 'timeout' : 'upstream');
   } finally {
     clearTimeout(timer);
-  }
-
-  let data: GeminiResponse = {};
-  try {
-    data = (await response.json()) as GeminiResponse;
-  } catch {
-    if (!response.ok) data = {};
-    else throw new GeminiError('upstream');
   }
 
   if (!response.ok) {

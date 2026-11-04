@@ -167,7 +167,7 @@ describe('request validation and limits', () => {
     const fetchImpl = vi.fn().mockImplementation(() => geminiOk(validModelOutput));
     const payload = body({
       chunk: { index: 0, total: 1, pages: [1, 1], text: '' },
-      images: [{ page: 1, mimeType: 'image/jpeg', dataBase64: 'QUJD' }],
+      images: [{ page: 1, mimeType: 'image/jpeg', dataBase64: '/9j/4AAQ' }],
     });
     expect((await handle(post(payload), env(), { fetchImpl })).status).toBe(200);
   });

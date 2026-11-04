@@ -1,10 +1,23 @@
-/** Parses an amount written in Polish, English or mixed notation. Returns null if ambiguous. */
+const isGrouped = (groups: string[]): boolean =>
+  groups.length > 1 &&
+  /^\d{1,3}$/.test(groups[0] ?? '') &&
+  groups.slice(1).every((g) => /^\d{3}$/.test(g));
+
+/**
+ * Parses an amount written in Polish, English or mixed notation. Returns null if it is ambiguous
+ * or malformed: a wrong number is worse than a missing one. A single separator followed by exactly
+ * three digits ("1.234", "1,234") could be a decimal or a thousands mark, so it is rejected.
+ */
 export function parseAmount(text: string): number | null {
-  const cleaned = text.replace(/[^\d.,-]/g, '');
-  if (!/\d/.test(cleaned)) return null;
-  const negative = cleaned.startsWith('-');
-  const body = cleaned.replace(/-/g, '');
-  if (cleaned.slice(1).includes('-')) return null;
+  if (text.includes('%')) return null;
+  // Optional sign or opening bracket, then digits with spaces and separators; only digit-free text around it.
+  const found = /^[^\d\-\u2212(]*?([-\u2212(]?)\s*([.,]?\d[\d\s.,]*)([^\d]*)$/u.exec(text);
+  if (!found || /[-\u2212]/u.test(found[3] ?? '')) return null;
+  const negative = found[1] !== '';
+  const core = found[2] ?? '';
+  const spaced = (core.split(/[.,]/u).find((part) => part.length > 0) ?? '').trim().split(/\s+/u);
+  if (spaced.length > 1 && !isGrouped(spaced)) return null;
+  const body = core.replace(/\s/g, '');
 
   const lastComma = body.lastIndexOf(',');
   const lastDot = body.lastIndexOf('.');
@@ -12,12 +25,24 @@ export function parseAmount(text: string): number | null {
   if (lastComma !== -1 && lastDot !== -1) {
     const decimalSep = lastComma > lastDot ? ',' : '.';
     const thousandsSep = decimalSep === ',' ? '.' : ',';
-    normalized = body.split(thousandsSep).join('').replace(decimalSep, '.');
+    const [whole = '', fraction = '', ...rest] = body.split(decimalSep);
+    if (rest.length > 0 || !/^\d+$/.test(fraction)) return null;
+    const groups = whole.split(thousandsSep);
+    if (!isGrouped(groups)) return null;
+    normalized = `${groups.join('')}.${fraction}`;
   } else if (lastComma !== -1 || lastDot !== -1) {
-    const sep = lastComma !== -1 ? ',' : '.';
-    const groups = body.split(sep);
-    if (groups.length === 2) normalized = `${groups[0]}.${groups[1]}`;
-    else if (groups.slice(1).every((g) => g.length === 3)) normalized = groups.join('');
+    const groups = body.split(lastComma !== -1 ? ',' : '.');
+    if (
+      groups.some((g) => !/^\d*$/.test(g)) ||
+      groups.some((g, i) => i < groups.length - 1 && g === '' && (i > 0 || groups.length > 2))
+    )
+      return null;
+    if (groups.length === 2) {
+      const [whole = '', fraction = ''] = groups;
+      if (fraction === '') return null;
+      if (fraction.length === 3 && whole !== '0' && whole.length <= 3) return null;
+      normalized = `${whole || '0'}.${fraction}`;
+    } else if (isGrouped(groups)) normalized = groups.join('');
     else return null;
   } else {
     normalized = body;
@@ -27,7 +52,7 @@ export function parseAmount(text: string): number | null {
   return negative ? -value : value;
 }
 
-const CURRENCY_ALIASES: Record<string, string> = {
+const CURRENCY_ALIASES: Readonly<Record<string, string>> = {
   zł: 'PLN',
   zl: 'PLN',
   złotych: 'PLN',
@@ -54,13 +79,13 @@ function isKnownCurrency(code: string): boolean {
 /** Maps a symbol, name or code to an ISO 4217 code, or null if unknown. */
 export function normalizeCurrency(text: string): string | null {
   const key = text.trim().toLocaleLowerCase('pl');
-  const alias = CURRENCY_ALIASES[key];
+  const alias = Object.hasOwn(CURRENCY_ALIASES, key) ? CURRENCY_ALIASES[key] : undefined;
   if (alias) return alias;
   if (/^[a-z]{3}$/.test(key) && isKnownCurrency(key.toUpperCase())) return key.toUpperCase();
   return null;
 }
 
-const MONTHS: Record<string, number> = {
+const MONTHS: Readonly<Record<string, number>> = {
   // Polish (genitive and nominative)
   stycznia: 1,
   styczeń: 1,
@@ -117,6 +142,11 @@ const MONTHS: Record<string, number> = {
   dezember: 12,
 };
 
+const monthNumber = (name: string): number | undefined => {
+  const key = name.toLocaleLowerCase('pl');
+  return Object.hasOwn(MONTHS, key) ? MONTHS[key] : undefined;
+};
+
 function toIso(year: number, month: number, day: number): string | null {
   if (month < 1 || month > 12 || day < 1) return null;
   const date = new Date(Date.UTC(year, month - 1, day));
@@ -139,12 +169,12 @@ export function normalizeDate(text: string): string | null {
   if (m) return toIso(Number(m[3]), Number(m[2]), Number(m[1]));
   m = /^(\d{1,2})\.? (\p{L}+) (\d{4})(?: ?r\.?)?$/u.exec(s);
   if (m) {
-    const month = MONTHS[(m[2] ?? '').toLocaleLowerCase('pl')];
+    const month = monthNumber(m[2] ?? '');
     return month ? toIso(Number(m[3]), month, Number(m[1])) : null;
   }
   m = /^(\p{L}+) (\d{1,2}),? (\d{4})$/u.exec(s);
   if (m) {
-    const month = MONTHS[(m[1] ?? '').toLocaleLowerCase('pl')];
+    const month = monthNumber(m[1] ?? '');
     return month ? toIso(Number(m[3]), month, Number(m[2])) : null;
   }
   return null;

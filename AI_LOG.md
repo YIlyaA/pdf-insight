@@ -28,6 +28,13 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | Chose Gemini model names `gemini-2.5-*` from memory | first live call returned HTTP 404 from Google | read the official model list, switched to `gemini-3.6-flash` with `gemini-3.5-flash-lite` as fallback |
 | Treated only quota errors (429) as a reason to switch model | live calls returned HTTP 503 (overloaded) 3 times in a row | added a test first, then fallback on 503 too; 2 live calls then returned 200 |
 | Hid provider errors completely, so the 404 was impossible to diagnose | debugging the live call | added only the numeric status in an `x-upstream-status` header, never the provider message |
+| Read the whole request body with `request.text()` and checked its length in characters | review session: a chunked body without `content-length` was read fully (live probe: 9 MB, 4.6 s, then 413) and 5M `ą` (10 MB) passed the 8 MB cap | stream the body with a byte counter, test with a chunked stream and with multi-byte text |
+| Set the timeout only for the first part of the Gemini call | reviewer subagent: a response that sends headers and stalls was never cut | the timer now covers reading the body; test with a stalled stream |
+| Allowed 2 models x 2 attempts x 25 s per request | reviewer: worst case 100 s against a 30 s goal | one 28 s budget per request, retries skipped when too little is left |
+| `parseAmount('1.234')` returned 1.234 and a lookup `CURRENCY_ALIASES['constructor']` returned a function | reviewer probes | ambiguous amounts return null; lookups use `Object.hasOwn`; both have tests |
+| Escaped only the exact `</document>` tag and put the file name into the prompt unfiltered | review: a file name with a line break or a fullwidth tag got through | tolerant tag escaping, one-line file name, 20 new tests |
+| Believed "CORS limits the API to my site" | live probe: `curl` with a fake `Origin` gets 200 | documented in README, added a global limiter and stricter per-client limit |
+| CI never ran the tests (the test job was a comment in the template) | reviewer | added a `tests` job and pinned the actions to commit hashes |
 | Added a Claude co-author trailer to commits | owner's request | local history rewritten before the first push |
 
 ## What I understand and can explain

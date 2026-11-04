@@ -1,5 +1,53 @@
 import { normalizeCurrency, normalizeDate, parseAmount } from '../../src/lib/normalize';
 
+describe('parseAmount leading separators and grouping', () => {
+  it.each([
+    ['.50', 0.5],
+    ['$.99', 0.99],
+    [',99 zł', 0.99],
+    ['ok. 1 000 zł', 1000],
+  ])('parses %s', (input, expected) => {
+    expect(parseAmount(input)).toBe(expected);
+  });
+
+  it.each(['50-', '1 23 45', '12 3456'])('returns null for %j', (input) => {
+    expect(parseAmount(input)).toBeNull();
+  });
+});
+
+describe('parseAmount sign and junk', () => {
+  it.each([
+    ['\u2212100', -100],
+    ['(100)', -100],
+    ['(1 250,50)', -1250.5],
+    ['-100 zł', -100],
+    ['zł 100,50', 100.5],
+  ])('parses %s', (input, expected) => {
+    expect(parseAmount(input)).toBe(expected);
+  });
+
+  it.each(['1e5', '5%', '12abc34', '12 %', '1-2', 'about 3 to 4 million', '100.'])(
+    'returns null for %j',
+    (input) => {
+      expect(parseAmount(input)).toBeNull();
+    },
+  );
+});
+
+describe('lookups ignore inherited object properties', () => {
+  it.each(['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf'])(
+    'normalizeCurrency(%s) is null',
+    (input) => {
+      expect(normalizeCurrency(input)).toBeNull();
+    },
+  );
+
+  it.each(['constructor', '__proto__', 'toString'])('normalizeDate with month %s is null', (m) => {
+    expect(normalizeDate(`12 ${m} 2026`)).toBeNull();
+    expect(normalizeDate(`${m} 12, 2026`)).toBeNull();
+  });
+});
+
 describe('parseAmount', () => {
   it.each([
     ['12 300,00', 12300],
@@ -22,6 +70,36 @@ describe('parseAmount', () => {
   it.each(['', 'abc', '--', '1,2,3,4x', 'zł'])('returns null for %j', (input) => {
     expect(parseAmount(input)).toBeNull();
   });
+
+  // One separator followed by exactly three digits could be a decimal or a thousands mark.
+  // A wrong number is worse than a missing one, so these return null.
+  it.each(['1.234', '1,234', '12.345', '999,999', '-1.234'])(
+    'returns null for the ambiguous %j',
+    (input) => {
+      expect(parseAmount(input)).toBeNull();
+    },
+  );
+
+  it.each([
+    ['0.123', 0.123],
+    ['0,125', 0.125],
+    ['1234.567', 1234.567],
+    ['1.234.567', 1234567],
+    ['1,234,567', 1234567],
+    ['1.234,567', 1234.567],
+    ['1,234.567', 1234.567],
+    ['12,5', 12.5],
+    ['12.50', 12.5],
+  ])('parses the unambiguous %s', (input, expected) => {
+    expect(parseAmount(input)).toBe(expected);
+  });
+
+  it.each(['1.23,4', '1,234,56', '1.234,5.6', '12,34.56,78', '1..2', '.,'])(
+    'returns null for malformed grouping %j',
+    (input) => {
+      expect(parseAmount(input)).toBeNull();
+    },
+  );
 });
 
 describe('normalizeCurrency', () => {
