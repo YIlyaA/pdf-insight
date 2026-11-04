@@ -48,6 +48,8 @@ Working draft, updated as the work goes on. Entries describe what really happene
 | Any error while `navigator.onLine` was false turned into "Brak połączenia", even a refused file | prosecutor agent | only network errors and client timeouts map to offline; test added |
 | Coverage line could claim pages that were never sent when a scan chunk started inside a text chunk | prosecutor and defender agents | `analyzedUpTo()` stops before the first unsent chunk; test added |
 | Pinned a GitHub Pages workflow with placeholder hashes in the first commit (a `sed` command failed silently) | defender agent noticed the placeholders | replaced with real commit hashes and amended the unpushed commit |
+| Tuned the Worker time limits by trial runs on the live free quota (about 20 calls), which used up the free Gemini quota before I had read its limits | owner's complaint; the live run then returned 429 | stopped all live probing, read the official rate-limit and thinking docs, owner switched to a paid prepaid key; settings are now chosen from measured numbers in `worker/wrangler.jsonc` |
+| Left a test-data file in a different temp folder than the shell that used it, and re-ran a 10 MB live test three times because of wrong paths | the script failed with file-not-found | check the path before a run that spends quota |
 | `npm install` failed with EPERM (root-owned `~/.npm`) | install output | not an AI mistake; worked around with `--cache` |
 
 ## What I understand and can explain

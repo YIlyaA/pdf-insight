@@ -3,7 +3,7 @@ import { splitIntoChunks } from './chunk';
 import { AppError } from './errors';
 import { mergeInsights } from './merge';
 import { PdfError, extractPages, type PdfJsLike } from './pdfText';
-import { MAX_CHUNK_CHARS, MAX_IMAGES_PER_REQUEST, type AnalyzeRequest } from './protocol';
+import { MAX_CHUNK_CHARS, type AnalyzeRequest } from './protocol';
 import type { PageRenderer } from './renderPages';
 import type { Insight } from './schema';
 
@@ -102,7 +102,10 @@ function scanChunk(images: ChunkImage[]): PlannedChunk {
   return { pages: [first, last], text: '', images };
 }
 
-/** Runs of consecutive scan pages, at most 8 non-blank images each; blank pages are dropped. */
+/** Scan pages per request. The Worker accepts 8, but an 8-image call took 37-40 s against a 42 s budget on 4 Nov 2026; 4 leaves room. */
+const SCAN_IMAGES_PER_REQUEST = 4;
+
+/** Runs of consecutive scan pages, at most SCAN_IMAGES_PER_REQUEST non-blank images each; blank pages are dropped. */
 async function renderScanChunks(
   data: Uint8Array,
   scanPages: number[],
@@ -120,7 +123,7 @@ async function renderScanChunks(
     };
     for (const [i, page] of scanPages.entries()) {
       throwIfAborted(options.signal);
-      if (page !== previous + 1 || batch.length === MAX_IMAGES_PER_REQUEST) flush();
+      if (page !== previous + 1 || batch.length === SCAN_IMAGES_PER_REQUEST) flush();
       // One chunk more than a run can send keeps `total > count`, so the result reports partial coverage.
       if (chunks.length >= MAX_REQUESTS_PER_RUN) break;
       options.onProgress({ phase: 'scanning', page: i + 1, total: scanPages.length });

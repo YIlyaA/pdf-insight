@@ -43,6 +43,9 @@ interface RawResponse {
   body: unknown;
 }
 
+/** Pause before the single retry after a provider overload. */
+const OVERLOAD_RETRY_DELAY_MS = 2000;
+
 const defaultSleep = (ms: number, signal: AbortSignal): Promise<void> =>
   new Promise((resolve, reject) => {
     if (signal.aborted) {
@@ -187,10 +190,17 @@ export function createWorkerClient(options: ClientOptions): WorkerClient {
     if (!isOnline()) throw new AppError('offline');
     const url = `${baseUrl}${path}`;
     const body = JSON.stringify(payload);
+    let overloadRetried = false;
     for (let attempt = 0; ; attempt += 1) {
       const response = await send(url, body, ctx.signal);
       if (response.status >= 200 && response.status < 300) return response.body;
       const code = errorCodeOf(response);
+      // The provider was overloaded for a moment: one short second try before showing an error.
+      if (response.status === 502 && code === 'upstream_error' && !overloadRetried) {
+        overloadRetried = true;
+        await wait(OVERLOAD_RETRY_DELAY_MS, ctx.signal);
+        continue;
+      }
       const waitable = response.status === 429 && code === 'rate_limited';
       if (!waitable || attempt >= maxRetries) throw new AppError(code);
       await countdown(retryAfterSeconds(response.retryAfter, fallbackSec), ctx);
