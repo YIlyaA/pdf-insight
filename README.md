@@ -105,7 +105,7 @@ Environment variables:
 ## Security
 
 - The API key lives only in Worker secrets. It is not in the frontend or in the Git history.
-- CORS is limited to the demo domain. This stops other websites in a browser, not scripts: anyone can send a fake `Origin` with `curl`. The real protection of the free quota is the limits: per client (IPv6 counted by /64), one global bucket for all clients, a hard byte cap on the request body (read as a stream), image checks (valid base64, type matches the file header) and a 28 s time budget per request.
+- CORS is limited to the demo domain. This stops other websites in a browser, not scripts: anyone can send a fake `Origin` with `curl`. The real protection of the AI quota is the limits: per client (IPv6 counted by /64), one global bucket for all clients, a hard byte cap on the request body (read as a stream), image checks (valid base64, type matches the file header) and a 38 s time budget per request. The Google project also has a monthly spend cap, which is the last line of defence against a runaway bill.
 - Model output is untrusted too: only known fields are kept, strings and lists are cut to fixed sizes, amounts that cannot be read without guessing (`1.234`) are dropped.
 - Prompt-injection defences: the document sits in a tagged block, look-alike closing tags (zero-width, fullwidth, other case) are broken, the file name is reduced to one clean line, and the answer is checked against the schema. The model is not given any tool or secret to leak.
 - PDF content is data, not instructions. No `dangerouslySetInnerHTML`; results are rendered as text.
@@ -120,16 +120,17 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 | Not a PDF, empty, over 10 MB, corrupt, password-protected | Polish message, no request is sent |
 | PDF without a text layer (scan), scan mixed with text | scanned pages are read as images |
 | Malformed AI answer | one retry, then an error with a retry button |
-| Free API quota used up, rate limit, no network, timeout | separate messages, retry button |
+| AI quota or spend cap used up, rate limit, no network, timeout | separate messages (the quota message has no retry button) |
 | Instructions hidden in the PDF text | ignored (covered by a test fixture) |
 
 ## Accuracy
 
-The summary and the data come from an AI model, so check them against the document before you rely on them. Checked so far on real files: a 12-page contract (with a scanned annex), a 15-page paper, an IRS form, a Polish university document, a 14-page two-column paper, a black-and-white fax scan and three deliberately degraded scans (skewed, blurred, rotated by 90 degrees). Amounts and dates were compared with the PDF text and matched. Known weaknesses:
+The summary and the data come from an AI model, so check them against the document before you rely on them. Checked so far on real files: a 12-page contract (with a scanned annex), a 15-page paper, an IRS form, a Polish university document, a 14-page two-column paper, a black-and-white fax scan and three deliberately degraded scans (skewed, blurred, rotated by 90 degrees). Amounts and dates were compared with the PDF text; the weaknesses found are listed below. Known weaknesses:
 
 - Text read from a scan can contain misreadings (for example a company name with one wrong letter). The result then says: "Część treści odczytano ze skanu. Sprawdź nazwy i kwoty."
 - The model may list minor figures (a page fee, share capital); the prompt tells it to skip them, but it is not guaranteed.
-- A date is kept only when day, month and year are written; a bare year is not turned into 1 January.
+- The model sometimes completes a month or a year into a day ("March 2024" into 1 March 2024) although the prompt forbids it. For text pages the app removes such dates; for scans it cannot.
+- Amounts are listed most important first, but the order is the model's judgement.
 - The scan note is not shown again when a result is opened from the history.
 - The app does not check that a value really appears in the document.
 
@@ -141,14 +142,14 @@ The summary and the data come from an AI model, so check them against the docume
 | Requests per run | up to 12, one at a time, at least 6 s apart | browser; a longer document is analysed up to the cap and the result says which pages were covered |
 | Scan images | 4 pages per request (about 44 scanned pages per run), each image at most 700 000 base64 characters | browser (JPEG quality and size are lowered until it fits) |
 | Requests per minute | 10 per IP address, 30 for all visitors together | Worker; on `429` the browser waits `Retry-After` and continues |
-| Free AI quota | shared by all visitors | Gemini free tier; when it is used up the app shows a separate message |
+| AI quota | shared by all visitors; paid Gemini project with a monthly spend cap | when it is used up the app shows a separate message and the demo is unavailable until the cap is raised or the month ends |
 | Time | one request is cut after 45 s in the browser and 38 s in the Worker (one model call 22 s, then the fallback model gets the rest) | |
 | Provider overload | one automatic retry after 2 s, then an error with a retry button | browser |
 | History | 10 results, 30 days, this browser only (`localStorage`), not shared between users | |
 
 ## Known limitations
 
-- The free API quota is shared by all demo users. When it runs out, analysis is temporarily unavailable.
+- The AI quota (a paid project with a monthly spend cap) is shared by all demo users. When it runs out, analysis is unavailable until the cap is raised or the month ends.
 - Very long documents may exceed the time limit.
 - Scan recognition quality depends on the AI model.
 - The Worker cannot tell a real visitor from a script. A determined person can still use the global limit up for a few minutes at a time; a captcha (Cloudflare Turnstile) would close this and is not built.
