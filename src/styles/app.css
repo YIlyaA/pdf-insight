@@ -47,7 +47,8 @@ button {
   outline-offset: var(--focus-offset);
 }
 
-[tabindex='-1']:focus:not(:focus-visible) {
+/* Headings that receive focus from code are not controls: no frame around them. */
+[tabindex='-1']:focus {
   outline: none;
 }
 

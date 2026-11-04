@@ -69,6 +69,17 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
     targets[state.focus.target].current?.focus();
   }, [state.focus]);
 
+  // A PDF dropped outside the zone would make the browser open it and end the running analysis.
+  useEffect(() => {
+    const block = (event: Event) => event.preventDefault();
+    window.addEventListener('dragover', block);
+    window.addEventListener('drop', block);
+    return () => {
+      window.removeEventListener('dragover', block);
+      window.removeEventListener('drop', block);
+    };
+  }, []);
+
   // The confirmation is visible for a moment, then cleared so the same text can be announced again.
   useEffect(() => {
     if (!state.announcement) return;
