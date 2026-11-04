@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import type { Ref } from 'react';
 import type { useAnalysis } from '../hooks/useAnalysis';
 import { DropZone } from './DropZone';
@@ -24,6 +24,7 @@ interface MainPanelProps {
 export function MainPanel(props: MainPanelProps) {
   const { analysis, now, headingRef, zoneRef, onFile, onOpenPicker, onCopy, onNotify } = props;
   const { view, zoneError } = analysis.state;
+  const reduceMotion = useReducedMotion();
 
   function panel() {
     switch (view.kind) {
@@ -93,7 +94,7 @@ export function MainPanel(props: MainPanelProps) {
       className="stage"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.15, ease: 'easeOut' }}
+      transition={reduceMotion ? { duration: 0 } : { duration: 0.15, ease: 'easeOut' }}
     >
       {panel()}
     </motion.div>

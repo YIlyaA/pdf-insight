@@ -74,7 +74,7 @@ export function App({ services: overrides }: { services?: Partial<AppServices> }
     if (!state.announcement) return;
     const timer = setTimeout(() => announce(''), TOAST_MS);
     return () => clearTimeout(timer);
-  }, [state.announcement, announce]);
+  }, [state.announcement, state.announcementId, announce]);
 
   const openPicker = useCallback(() => inputRef.current?.click(), []);
   const onFile = useCallback((file: File) => void selectFile(file), [selectFile]);

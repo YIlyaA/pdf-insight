@@ -1,4 +1,4 @@
-import { motion } from 'motion/react';
+import { motion, useReducedMotion } from 'motion/react';
 import type { Progress } from '../lib/pipeline';
 import { COPY } from './copy';
 import { Icon } from './Icon';
@@ -43,6 +43,7 @@ const ICONS = { done: 'check', active: 'active', pending: 'pending' } as const;
 
 export function StepList({ progress }: { progress: Progress }) {
   const current = activeStep(progress);
+  const reduceMotion = useReducedMotion();
   return (
     <ol className="steps">
       {COPY.steps.map((name, index) => {
@@ -61,7 +62,7 @@ export function StepList({ progress }: { progress: Progress }) {
               className="step-icon"
               initial={{ opacity: 0, scale: 0.7 }}
               animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.2, ease: 'easeOut' }}
+              transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: 'easeOut' }}
             >
               <Icon name={ICONS[state]} />
             </motion.span>

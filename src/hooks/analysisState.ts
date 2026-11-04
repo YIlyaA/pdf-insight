@@ -27,6 +27,8 @@ export interface AnalysisState {
   zoneError: string | null;
   /** Text of the polite live region. */
   announcement: string;
+  /** Bumped on every announce action so repeated text restarts the visible timer. */
+  announcementId: number;
   focus: { target: FocusTarget; seq: number } | null;
 }
 
@@ -47,6 +49,7 @@ export const initialState: AnalysisState = {
   view: { kind: 'idle' },
   zoneError: null,
   announcement: '',
+  announcementId: 0,
   focus: null,
 };
 
@@ -68,6 +71,7 @@ export function reducer(state: AnalysisState, action: Action): AnalysisState {
         },
         zoneError: null,
         announcement: action.replaced ? COPY.cancelled : '',
+        announcementId: state.announcementId,
         focus: focusOn(state, 'heading'),
       };
     case 'progress':
@@ -122,6 +126,7 @@ export function reducer(state: AnalysisState, action: Action): AnalysisState {
         view: { kind: 'idle' },
         zoneError: null,
         announcement: COPY.cancelled,
+        announcementId: state.announcementId,
         focus: focusOn(state, 'title'),
       };
     case 'reset':
@@ -144,6 +149,6 @@ export function reducer(state: AnalysisState, action: Action): AnalysisState {
         focus: focusOn(state, 'heading'),
       };
     case 'announce':
-      return { ...state, announcement: action.text };
+      return { ...state, announcement: action.text, announcementId: state.announcementId + 1 };
   }
 }

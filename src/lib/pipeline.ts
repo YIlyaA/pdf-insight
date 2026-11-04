@@ -69,6 +69,16 @@ class Plan {
   ) {}
 }
 
+/** Last page that is certainly covered: no unsent chunk starts at or before it. */
+export function analyzedUpTo(
+  chunks: ReadonlyArray<{ pages: [number, number] }>,
+  count: number,
+): number {
+  const sentEnd = Math.max(...chunks.slice(0, count).map((c) => c.pages[1]));
+  const unsentStarts = chunks.slice(count).map((c) => c.pages[0] - 1);
+  return Math.min(sentEnd, ...unsentStarts);
+}
+
 function throwIfAborted(signal: AbortSignal): void {
   if (signal.aborted) throw new AppError('aborted');
 }
@@ -228,7 +238,7 @@ async function run(file: File, deps: PipelineDeps, options: RunOptions): Promise
     ...combined,
     document: { ...combined.document, fileName: file.name, pages: plan.numPages },
   };
-  const analyzedTo = Math.max(...plan.chunks.slice(0, count).map((c) => c.pages[1]));
+  const analyzedTo = analyzedUpTo(plan.chunks, count);
   const coverage = count < total ? { analyzedTo, totalPages: plan.numPages } : null;
   return { kind: 'result', insight, coverage };
 }

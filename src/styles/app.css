@@ -447,6 +447,10 @@ button {
   white-space: nowrap;
 }
 
+.panel-meta.file-name {
+  display: block;
+}
+
 .panel-meta {
   display: flex;
   flex-wrap: wrap;

@@ -23,7 +23,9 @@ function toEntry(raw: unknown): HistoryEntry | null {
   return parsed.success ? { id, fileName, savedAt, insight: parsed.data } : null;
 }
 
-const isFresh = (entry: HistoryEntry, now: number) => now - entry.savedAt <= HISTORY_TTL_MS;
+/** Not older than the TTL and not from the future (a moved clock would keep it forever). */
+const isFresh = (entry: HistoryEntry, now: number) =>
+  entry.savedAt <= now && now - entry.savedAt <= HISTORY_TTL_MS;
 
 function readRaw(storage: StorageLike): unknown {
   try {
@@ -47,10 +49,13 @@ export function loadHistory(storage: StorageLike | null, now: number): HistoryEn
   if (!storage) return [];
   const raw = readRaw(storage);
   if (!Array.isArray(raw)) return [];
+  const seen = new Set<string>();
   return raw
     .map(toEntry)
     .filter((entry): entry is HistoryEntry => entry !== null && isFresh(entry, now))
-    .sort((a, b) => b.savedAt - a.savedAt);
+    .sort((a, b) => b.savedAt - a.savedAt)
+    .filter((entry) => !seen.has(entry.id) && Boolean(seen.add(entry.id)))
+    .slice(0, HISTORY_MAX_ENTRIES);
 }
 
 /** Reads, adds the entry on top (same id replaced), trims to 10, writes. Returns the new list. Never throws (quota/disabled -> returns the in-memory list). */
