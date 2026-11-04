@@ -1,2 +1,12 @@
 .claude/
 .supervisor/
+
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+.wrangler/
+.dev.vars
+*.log
+.DS_Store
