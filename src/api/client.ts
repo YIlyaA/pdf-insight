@@ -191,7 +191,8 @@ export function createWorkerClient(options: ClientOptions): WorkerClient {
     const url = `${baseUrl}${path}`;
     const body = JSON.stringify(payload);
     let overloadRetried = false;
-    for (let attempt = 0; ; attempt += 1) {
+    let attempt = 0;
+    for (;;) {
       const response = await send(url, body, ctx.signal);
       if (response.status >= 200 && response.status < 300) return response.body;
       const code = errorCodeOf(response);
@@ -203,6 +204,7 @@ export function createWorkerClient(options: ClientOptions): WorkerClient {
       }
       const waitable = response.status === 429 && code === 'rate_limited';
       if (!waitable || attempt >= maxRetries) throw new AppError(code);
+      attempt += 1;
       await countdown(retryAfterSeconds(response.retryAfter, fallbackSec), ctx);
     }
   }

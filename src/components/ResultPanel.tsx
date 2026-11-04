@@ -21,6 +21,7 @@ interface ResultPanelProps {
   fileName: string;
   insight: Insight;
   coverage: Coverage | null;
+  scanned: boolean;
   /** Copies text to the clipboard and announces the outcome politely. */
   onCopy(text: string): void;
   onNotify(text: string): void;
@@ -40,7 +41,7 @@ function factChips(doc: Insight['document']): string[] {
 }
 
 export function ResultPanel(props: ResultPanelProps) {
-  const { fileName, insight, coverage, onCopy, onNotify, onNext, headingRef } = props;
+  const { fileName, insight, coverage, scanned, onCopy, onNotify, onNext, headingRef } = props;
   const headingId = useId();
   const json = useMemo(() => JSON.stringify(insight, null, 2), [insight]);
   const { title, language } = insight.document;
@@ -73,6 +74,7 @@ export function ResultPanel(props: ResultPanelProps) {
         {coverage && (
           <p className="coverage">{coverageLabel(coverage.analyzedTo, coverage.totalPages)}</p>
         )}
+        {scanned && <p className="coverage">{COPY.scanNote}</p>}
       </header>
       <div className="actions">
         <Button

@@ -19,6 +19,14 @@ function unique<T>(items: T[], key: (item: T) => string): T[] {
 
 const uniqueStrings = (items: string[]) => unique(items.map((s) => s.trim()).filter(Boolean), norm);
 
+/** First items of every part before the second items of any part, so a cap does not drop later parts. */
+function interleave(lists: string[][]): string[] {
+  const longest = Math.max(0, ...lists.map((l) => l.length));
+  return Array.from({ length: longest }, (_, i) =>
+    lists.flatMap((l) => (i < l.length ? [l[i]] : [])),
+  ).flat() as string[];
+}
+
 function mostCommon<T extends string>(values: T[], skip?: T): T {
   const counts = new Map<T, number>();
   for (const v of values) counts.set(v, (counts.get(v) ?? 0) + 1);
@@ -53,7 +61,7 @@ export function mergeInsights(parts: Insight[]): Insight {
       .map((p) => p.summary.trim())
       .filter(Boolean)
       .join(' '),
-    keyPoints: uniqueStrings(parts.flatMap((p) => p.keyPoints)).slice(0, MAX_KEY_POINTS),
+    keyPoints: uniqueStrings(interleave(parts.map((p) => p.keyPoints))).slice(0, MAX_KEY_POINTS),
     entities: {
       organizations: uniqueStrings(parts.flatMap((p) => p.entities.organizations)),
       people: uniqueStrings(parts.flatMap((p) => p.entities.people)),
@@ -66,6 +74,6 @@ export function mergeInsights(parts: Insight[]): Insight {
       parts.flatMap((p) => p.dates),
       (d) => `${d.date}|${norm(d.context)}`,
     ),
-    keywords: uniqueStrings(parts.flatMap((p) => p.keywords)).slice(0, MAX_KEYWORDS),
+    keywords: uniqueStrings(interleave(parts.map((p) => p.keywords))).slice(0, MAX_KEYWORDS),
   };
 }

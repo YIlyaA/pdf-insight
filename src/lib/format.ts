@@ -100,6 +100,20 @@ export function formatFileSize(bytes: number): string {
   return `${bytes} B`;
 }
 
+const NBSP = '\u00a0';
+
+/**
+ * Display only: keeps "184 500,00 PLN", "nr 14/2026" and "2026 r." on one line.
+ * The data itself is never changed; copy and download use the original text.
+ */
+export function keepNumbersTogether(text: string): string {
+  return text
+    .replace(/(?<!\d)\d{1,3}(?: \d{3})+(?!\d)/g, (group) => group.replaceAll(' ', NBSP))
+    .replace(/(\d) (PLN|EUR|USD|GBP|CHF|zł)(?![\p{L}\d])/gu, `$1${NBSP}$2`)
+    .replace(/\b(nr|Nr|NR) (?=\d)/g, `$1${NBSP}`)
+    .replace(/(\d{4}) r\./g, `$1${NBSP}r.`);
+}
+
 const TEXT_LABELS = {
   summary: 'Podsumowanie',
   keyPoints: 'Najważniejsze punkty',

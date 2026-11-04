@@ -17,8 +17,8 @@ export const LIMITS = {
   entity: 200,
   entities: 50,
   context: 300,
-  amounts: 100,
-  dates: 100,
+  amounts: 15,
+  dates: 15,
   maxAmount: 1e15,
 } as const;
 

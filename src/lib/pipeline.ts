@@ -1,6 +1,7 @@
 import type { WorkerClient } from '../api/client';
 import { splitIntoChunks } from './chunk';
 import { AppError } from './errors';
+import { groundDates } from './groundDates';
 import { mergeInsights } from './merge';
 import { PdfError, extractPages, type PdfJsLike } from './pdfText';
 import { MAX_CHUNK_CHARS, type AnalyzeRequest } from './protocol';
@@ -26,7 +27,8 @@ export interface Coverage {
 }
 
 export type Outcome =
-  { kind: 'result'; insight: Insight; coverage: Coverage | null } | { kind: 'empty' };
+  | { kind: 'result'; insight: Insight; coverage: Coverage | null; scanned?: true }
+  | { kind: 'empty' };
 
 /** Kept by the caller between a failed run and its retry: finished chunks and the summary are never requested again. */
 export interface RunState {
@@ -188,7 +190,10 @@ async function analyseChunks(
       signal,
       onRateLimitWait: options.onRateLimitWait,
     });
-    state.insights.set(index, insight);
+    state.insights.set(
+      index,
+      chunk.images.length === 0 ? groundDates(insight, chunk.text) : insight,
+    );
     throwIfAborted(signal);
     done += 1;
     options.onProgress({ phase: 'analyzing', done, total: count });
@@ -243,7 +248,11 @@ async function run(file: File, deps: PipelineDeps, options: RunOptions): Promise
   };
   const analyzedTo = analyzedUpTo(plan.chunks, count);
   const coverage = count < total ? { analyzedTo, totalPages: plan.numPages } : null;
-  return { kind: 'result', insight, coverage };
+  // Set only when scan pages were sent: text read by the model from images can contain misreadings.
+  const scanned = plan.chunks.slice(0, count).some((c) => c.images.length > 0);
+  return scanned
+    ? { kind: 'result', insight, coverage, scanned: true }
+    : { kind: 'result', insight, coverage };
 }
 
 /** file is already validated. Throws PdfError (password, corrupt) or AppError. */

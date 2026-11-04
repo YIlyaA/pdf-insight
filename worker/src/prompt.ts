@@ -25,8 +25,8 @@ Rules:
 - Keys are in English. Text values are in the document's language.
 - Do not invent anything. If information is absent, use null or []. Never guess.
 - People and organizations: base (nominative) form, even if the text uses another grammatical case.
-- amounts: the main monetary values only (price, fee, penalty, deposit, limit), at most 12 amounts per answer; skip repeated or minor figures. Never percentages. "value" is a JSON number (no spaces, dot as decimal separator). "currency" is an ISO 4217 code such as PLN, EUR, USD.
-- dates: the dates that matter most (signing, start, end, deadlines, payments), at most 12 dates per answer, written as ISO 8601.
+- amounts: the main monetary values only, the most important first (total price or fee, then recurring fees, penalties, limits, deposits, then the rest) (price, fee, penalty, deposit, limit), at most 12 amounts per answer; skip repeated or minor figures, share capital, registry numbers and publication or copyright fees. Never percentages. "value" is a JSON number (no spaces, dot as decimal separator). "currency" is an ISO 4217 code such as PLN, EUR, USD.
+- dates: the dates that matter most, the most important first (signing, start, end, deadlines, payments), at most 12 dates per answer, written as ISO 8601. Include a date only when its day, month and year are all stated in the document: never turn a year or month alone into day 01, skip such a date (the same rule applies to document.date).
 - "type" is the main purpose of the whole document; attachments inside it do not change it.
 - If the input is part N of M of a longer document, extract only from this part.
 - If scanned pages are attached as images, read them and treat their content like the text.`;

@@ -123,6 +123,16 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 | Free API quota used up, rate limit, no network, timeout | separate messages, retry button |
 | Instructions hidden in the PDF text | ignored (covered by a test fixture) |
 
+## Accuracy
+
+The summary and the data come from an AI model, so check them against the document before you rely on them. Checked so far on real files: a 12-page contract (with a scanned annex), a 15-page paper, an IRS form, a Polish university document, a 14-page two-column paper, a black-and-white fax scan and three deliberately degraded scans (skewed, blurred, rotated by 90 degrees). Amounts and dates were compared with the PDF text and matched. Known weaknesses:
+
+- Text read from a scan can contain misreadings (for example a company name with one wrong letter). The result then says: "Część treści odczytano ze skanu. Sprawdź nazwy i kwoty."
+- The model may list minor figures (a page fee, share capital); the prompt tells it to skip them, but it is not guaranteed.
+- A date is kept only when day, month and year are written; a bare year is not turned into 1 January.
+- The scan note is not shown again when a result is opened from the history.
+- The app does not check that a value really appears in the document.
+
 ## Limits
 
 | Limit | Value | Where |
@@ -130,9 +140,9 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 | File size | 10 MB | browser, checked before any request |
 | Requests per run | up to 12, one at a time, at least 6 s apart | browser; a longer document is analysed up to the cap and the result says which pages were covered |
 | Scan images | 4 pages per request (about 44 scanned pages per run), each image at most 700 000 base64 characters | browser (JPEG quality and size are lowered until it fits) |
-| Requests per minute | 10 per IP address | Worker; on `429` the browser waits `Retry-After` and continues |
+| Requests per minute | 10 per IP address, 30 for all visitors together | Worker; on `429` the browser waits `Retry-After` and continues |
 | Free AI quota | shared by all visitors | Gemini free tier; when it is used up the app shows a separate message |
-| Time | one request is cut after 45 s in the browser and 42 s in the Worker (one model call 36 s) | |
+| Time | one request is cut after 45 s in the browser and 38 s in the Worker (one model call 22 s, then the fallback model gets the rest) | |
 | Provider overload | one automatic retry after 2 s, then an error with a retry button | browser |
 | History | 10 results, 30 days, this browser only (`localStorage`), not shared between users | |
 
@@ -143,6 +153,7 @@ Full matrix: [docs/plan.md](docs/plan.md). The main ones:
 - Scan recognition quality depends on the AI model.
 - The Worker cannot tell a real visitor from a script. A determined person can still use the global limit up for a few minutes at a time; a captcha (Cloudflare Turnstile) would close this and is not built.
 - A document with a hidden instruction can still make the model write a wrong summary of that document. It cannot change the data shape, other users' results or the app.
+- Dates from text pages are checked against the text: a date is kept only when the day and the year stand next to each other in the document. Dates read from scans cannot be checked this way.
 - Amounts written like `1.234` or `1,234` are left out because they could mean 1.234 or 1234.
 - Scans: pages are rendered in the browser and read by the model; quality depends on the model. Blank pages are detected on the client and not sent. Scan decoding for JPX and JBIG2/CCITT images needs the wasm files that the build copies to `pdfjs/wasm/`.
 - Documents longer than the request cap are analysed only up to the cap (the result says `Przeanalizowano strony 1-N z M`).

@@ -23,6 +23,11 @@ describe('prompt', () => {
     expect(SYSTEM_PROMPT).toMatch(/nominative/i);
   });
 
+  it('asks for amounts and dates with the most important first', () => {
+    expect(SYSTEM_PROMPT).toMatch(/amounts:[^\n]*most important first/i);
+    expect(SYSTEM_PROMPT).toMatch(/dates:[^\n]*most important first/i);
+  });
+
   it('keeps the answer short: only the main amounts and dates, with a cap', () => {
     expect(SYSTEM_PROMPT).toMatch(/at most 12 amounts/i);
     expect(SYSTEM_PROMPT).toMatch(/at most 12 dates/i);

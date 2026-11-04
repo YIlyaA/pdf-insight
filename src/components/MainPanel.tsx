@@ -69,6 +69,7 @@ export function MainPanel(props: MainPanelProps) {
             fileName={view.fileName}
             insight={view.insight}
             coverage={view.coverage}
+            scanned={view.scanned}
             headingRef={headingRef}
             onCopy={onCopy}
             onNotify={onNotify}

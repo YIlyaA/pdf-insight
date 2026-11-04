@@ -15,7 +15,13 @@ export type View =
       waitSeconds: number | null;
     }
   | { kind: 'error'; fileName: string; code: ClientErrorCode }
-  | { kind: 'result'; fileName: string; insight: Insight; coverage: Coverage | null }
+  | {
+      kind: 'result';
+      fileName: string;
+      insight: Insight;
+      coverage: Coverage | null;
+      scanned: boolean;
+    }
   | { kind: 'empty'; fileName: string };
 
 /** Where focus goes after a state change: the panel h2, the page h1 or the drop zone. */
@@ -117,6 +123,7 @@ export function reducer(state: AnalysisState, action: Action): AnalysisState {
                 fileName: action.fileName,
                 insight: action.outcome.insight,
                 coverage: action.outcome.coverage,
+                scanned: action.outcome.scanned === true,
               }
             : { kind: 'empty', fileName: action.fileName },
         focus: focusOn(state, 'heading'),
@@ -144,6 +151,7 @@ export function reducer(state: AnalysisState, action: Action): AnalysisState {
           fileName: action.fileName,
           insight: action.insight,
           coverage: null,
+          scanned: false,
         },
         zoneError: null,
         focus: focusOn(state, 'heading'),

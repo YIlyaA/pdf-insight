@@ -59,4 +59,24 @@ describe('slow primary model', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(String(fetchImpl.mock.calls[1]?.[0])).toContain('fallback-model');
   });
+
+  it('keeps a quota error from the primary when the fallback then times out', async () => {
+    const fetchImpl = vi.fn().mockImplementation((url: string, init: RequestInit) => {
+      if (url.includes('primary-model')) {
+        return Promise.resolve(
+          new Response(JSON.stringify({ error: { code: 429, status: 'RESOURCE_EXHAUSTED' } }), {
+            status: 429,
+          }),
+        );
+      }
+      return new Promise((_resolve, reject) => {
+        init.signal?.addEventListener('abort', () =>
+          reject(new DOMException('aborted', 'AbortError')),
+        );
+      });
+    });
+    const res = await handle(request(), env({ GEMINI_TIMEOUT_MS: '20' }), { fetchImpl });
+    expect(res.status).toBe(429);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('quota_exceeded');
+  });
 });
