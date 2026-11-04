@@ -20,7 +20,7 @@ UI language: Polish. Code and spec: English.
   - wrong type / empty / >10 MB / unreadable / password-protected: inline error under the zone, no request sent, zone stays usable.
   - request failure: error panel with title, cause and next step. Which codes allow a retry, and the copy, are in section 11. Retry reruns only the chunks that did not finish.
   - offline (`navigator.onLine` is false): error panel "Brak połączenia", retry available. A fetch error while online is "Nie udało się połączyć z serwerem", never "offline".
-  - new file dropped during analysis: current request is aborted, new run starts.
+  - no second file can be added while an analysis runs: the drop zone is hidden until it finishes or is cancelled.
   - refresh during analysis: back to idle (result is in history only if finished).
   - no readable content: empty state "Nie znaleziono tekstu w tym pliku." (one string, section 9). It shows when every page is below the text threshold and a rendered page is blank (almost uniform pixels, checked on the client before upload), or when the model answers with an empty summary on the scan path.
 - Keyboard: Tab > drop zone (one tab stop; Enter/Space opens the picker) > history items. After analysis, focus moves to the result heading; on error, to the error heading.
@@ -48,7 +48,7 @@ UI language: Polish. Code and spec: English.
 ## 4. Screen × state matrix
 | Component | Loading | Empty | Partial | Success | Error | Offline / slow | Overflow | Disabled |
 |---|---|---|---|---|---|---|---|---|
-| UploadPanel | drag-over highlight | idle: instruction + limits | n/a | n/a | inline validation message | n/a | long file name truncated with title | while analysing the zone stays active: a dropped file aborts the run and starts a new one, announced politely; the picker is also reachable by keyboard |
+| UploadPanel | drag-over highlight | idle: instruction + limits | n/a | n/a | inline validation message | n/a | long file name truncated with title | hidden while analysing (owner decision 2026-11-04): the only controls are "Anuluj"; a file dropped outside a zone is ignored (page-level `dragover`/`drop` are cancelled) |
 | ProgressPanel | 4 steps, current marked, elapsed seconds (outside the live region, `aria-live="off"`) | n/a | "Analiza AI 2/5" for chunks | n/a | moves to ErrorPanel | after 15 s: "To trwa dłużej niż zwykle."; after 45 s without progress: client timeout, error `timeout` | n/a | cancel always enabled: aborts requests, returns to idle, focus goes to the zone heading, announced "Anulowano analizę" |
 | ErrorPanel | retry shows progress | n/a | n/a | n/a | title, cause, next step, 2 actions (retry only when section 11 allows it) | "Brak połączenia" | long message wraps | retry disabled while running and during a rate-limit countdown ("Spróbuj za 42 s") |
 | ResultPanel | skeleton never shown (result appears whole) | "Nie znaleziono treści w pliku" | missing fields shown as "Brak danych" | all sections | n/a | n/a | long lists collapse after 8 items with "Pokaż wszystkie (n)"; JSON scrolls in a bordered box | n/a |

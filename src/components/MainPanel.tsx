@@ -1,7 +1,6 @@
 import { motion, useReducedMotion } from 'motion/react';
 import type { Ref } from 'react';
 import type { useAnalysis } from '../hooks/useAnalysis';
-import { DropZone } from './DropZone';
 import { EmptyPanel } from './EmptyPanel';
 import { ErrorPanel } from './ErrorPanel';
 import { ProgressPanel } from './ProgressPanel';
@@ -39,25 +38,16 @@ export function MainPanel(props: MainPanelProps) {
         );
       case 'running':
         return (
-          <>
-            <ProgressPanel
-              fileName={view.fileName}
-              fileSize={view.fileSize}
-              startedAt={view.startedAt}
-              progress={view.progress}
-              waitSeconds={view.waitSeconds}
-              now={now}
-              headingRef={headingRef}
-              onCancel={analysis.cancel}
-            />
-            <DropZone
-              compact
-              ref={zoneRef}
-              error={zoneError}
-              onFile={onFile}
-              onOpenPicker={onOpenPicker}
-            />
-          </>
+          <ProgressPanel
+            fileName={view.fileName}
+            fileSize={view.fileSize}
+            startedAt={view.startedAt}
+            progress={view.progress}
+            waitSeconds={view.waitSeconds}
+            now={now}
+            headingRef={headingRef}
+            onCancel={analysis.cancel}
+          />
         );
       case 'error':
         return (
