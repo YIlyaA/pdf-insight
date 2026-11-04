@@ -93,7 +93,7 @@ npm run lint && npm run typecheck
 VITE_API_URL=https://… npm run build
 ```
 
-`npm run build` stops with an error when `VITE_API_URL` is missing: without it the build would silently drop the analysis code and every upload would fail in the browser. The Worker accepts only the demo origin, so a local page needs a dev proxy that sets that `Origin`, or your own Worker with `ALLOWED_ORIGIN` set to the local address (see `worker/`).
+`npm run build` stops with an error when `VITE_API_URL` is missing: without it the build would silently drop the analysis code and every upload would fail in the browser. The Worker accepts only the demo origin, so a local page needs a dev proxy that sets that `Origin`, or your own Worker with `ALLOWED_ORIGINS` set to the local address (see `worker/`).
 
 Environment variables:
 
